@@ -1,0 +1,3 @@
+users -> avatar_url -> 改成varchar 256
+users -> intro -> 改成text类型
+products -> image_url -> 改成varchar 256
