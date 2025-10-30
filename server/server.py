@@ -8,6 +8,8 @@ import secrets  # 用于生成安全随机 token
 app = Flask(__name__)
 CORS(app)
 
+
+
 # 数据库配置
 DB_CONFIG = {
     'host': '124.70.86.207',
