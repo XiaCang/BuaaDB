@@ -1,265 +1,253 @@
 <template>
-  <div class="login-page">
-    <!-- 背景 -->
-    <div class="background">
-      <!-- 左白右蓝 -->
-      <div class="bg-left">
-      </div>
-      <div class="bg-right">
-        <!-- 简单几何图形装饰 -->
-        <div class="circle"></div>
-        <div class="triangle"></div>
-      </div>
-    </div>
+  <div class="login-container">
+    <div class="decoration circle-1"></div>
+    <div class="decoration circle-2"></div>
 
-    <!-- 登录卡片 -->
-    <div class="login-card">
-      <!-- 左侧登录表单 -->
-      <div class="login-form">
-        <div class="tabs">
-          <span
-            :class="{ active: activeTab === 'login' }"
-            @click="activeTab = 'login'"
-          >登录</span>
-          <span
-            :class="{ active: activeTab === 'register' }"
-            @click="activeTab = 'register'"
-          >注册</span>
+    <el-card class="login-card">
+      <div class="login-header">
+        <div class="logo">
+          <el-icon :size="40" color="#ff6600"><Shop /></el-icon>
         </div>
-
-        <el-form
-          :model="form"
-          class="form"
-          label-position="top"
-          @submit.prevent="onSubmit"
-        >
-          <el-form-item label="用户名">
-            <el-input v-model="form.username" placeholder="请输入用户名" prefix-icon="el-icon-user"/>
-          </el-form-item>
-
-          <el-form-item label="密码">
-            <el-input
-              v-model="form.password"
-              type="password"
-              placeholder="请输入密码"
-              prefix-icon="el-icon-lock"
-              show-password
-            />
-          </el-form-item>
-
-          <el-text :type="info_type">{{  error_info }}</el-text>
-          
-
-          <el-button type="primary" class="login-btn" @click="onSubmit">
-            {{ activeTab === 'login' ? '登录' : '注册' }}
-          </el-button>
-        </el-form>
+        <h2>校园二手交易系统</h2>
+        <p>让闲置物品焕发新生</p>
       </div>
 
-      <!-- 右侧介绍区域 -->
-      <div class="welcome-section">
-        <div class="welcome-content">
-          <h2>Welcome to TradeHub</h2>
-          <p>在这里，让闲置重新发光 ✨</p>
-          <p>一个安全高效的二手物品交易系统。</p>
-        </div>
-      </div>
-    </div>
+      <el-tabs v-model="activeName" class="login-tabs" stretch>
+        <el-tab-pane label="账号登录" name="login">
+          <el-form :model="loginForm" :rules="rules" ref="loginFormRef" label-position="top">
+            <el-form-item label="用户名" prop="username">
+              <el-input 
+                v-model="loginForm.username" 
+                placeholder="请输入用户名"
+                prefix-icon="User"
+              />
+            </el-form-item>
+            <el-form-item label="密码" prop="password">
+              <el-input 
+                v-model="loginForm.password" 
+                type="password" 
+                placeholder="请输入密码" 
+                prefix-icon="Lock"
+                show-password
+                @keyup.enter="handleLogin"
+              />
+            </el-form-item>
+            <el-button 
+              type="primary" 
+              class="submit-btn" 
+              @click="handleLogin" 
+              :loading="loading"
+            >
+              立即登录
+            </el-button>
+          </el-form>
+        </el-tab-pane>
+
+        <el-tab-pane label="新用户注册" name="register">
+          <el-form :model="registerForm" :rules="rules" ref="registerFormRef" label-position="top">
+            <el-form-item label="用户名" prop="username">
+              <el-input v-model="registerForm.username" placeholder="设置用户名" prefix-icon="User" />
+            </el-form-item>
+            <el-form-item label="密码" prop="password">
+              <el-input v-model="registerForm.password" type="password" placeholder="设置密码" prefix-icon="Lock" show-password />
+            </el-form-item>
+            <el-button 
+              type="primary" 
+              class="submit-btn" 
+              @click="handleRegister" 
+              :loading="loading"
+            >
+              注册账号
+            </el-button>
+          </el-form>
+        </el-tab-pane>
+      </el-tabs>
+
+    </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { login,register } from "@/api/auth";
-import { useUserTokenStore } from "@/stores/auth";
-import { useRouter } from "vue-router";
+import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { Shop, User, Lock } from '@element-plus/icons-vue'
+import { login, register, getUserInfo } from '@/api/index'
+import { useUserStore } from '@/stores/user'
+import md5 from 'js-md5'
 
-import md5 from "js-md5";
+const router = useRouter()
+const userStore = useUserStore()
 
-const router = useRouter();
+const activeName = ref('login')
+const loading = ref(false)
+const rememberMe = ref(false)
+const loginFormRef = ref(null)
+const registerFormRef = ref(null)
 
-const form = ref({
-  username: "",
-  password: "",
-});
+const loginForm = reactive({
+  username: '',
+  password: ''
+})
 
-const error_info = ref("");
-const info_type = ref("danger")
-const activeTab = ref("login");
+const registerForm = reactive({
+  username: '',
+  password: ''
+})
 
-const onSubmit = () => {
+const rules = {
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }, { min: 6, message: '密码不能少于6位', trigger: 'blur' }]
+}
 
-  if (form.value.username === "") {
-    error_info.value = "请输入用户名";
-  }
-  else if (form.value.password === "") {
-    error_info.value = "请输入密码";
-  } else {
-    error_info.value = "";
-  }
-  const md5_password = md5(form.value.password);
-  if (activeTab.value === "login") {
+// 登录逻辑
+const handleLogin = async () => {
+  if (!loginFormRef.value) return
+  await loginFormRef.value.validate(async (valid) => {
+    if (valid) {
+      loading.value = true
+      try {
+        // 加密密码
+        loginForm.password = md5(loginForm.password)
+        const res = await login(loginForm)
 
-    login(form.value.username, md5_password)
-    .then((res) => {
-      const userTokenStore = useUserTokenStore();
-      userTokenStore.token = res.data.token;
-      localStorage.setItem("token", res.data.token);
-      router.push({ name: "home" });
-    }).catch((err) => {
-      info_type.value = "danger"
-      error_info.value = err.response.data.message;
-    })
-  } else {
-    register(form.value.username, md5_password).then((res) => {
-      info_type.value = "success"
-      error_info.value = res.data.message;
-    }).catch((err) => {
-      info_type.value = "danger"
-      error_info.value = err.response.data.message;
-    })
-  }
-};
+        console.log('In handleLogin: res = ', res);
+        
+
+        // 假设后端返回的数据结构中包含 token，例如 res.token 或 res.data.token
+        // 这里根据你提供的 request.js 直接返回了 res
+        const token = res.token || res.data?.token
+        
+        if (token) {
+          userStore.setToken(token)
+          // 获取用户信息并存储
+          const info = await getUserInfo()
+          userStore.setUserInfo(info)
+          
+          ElMessage.success('登录成功！欢迎回来')
+          router.push('/') // 跳转到首页
+        }
+      } catch (error) {
+        console.error(error)
+      } finally {
+        loading.value = false
+      }
+    }
+  })
+}
+
+// 注册逻辑
+const handleRegister = async () => {
+  if (!registerFormRef.value) return
+  await registerFormRef.value.validate(async (valid) => {
+    if (valid) {
+      loading.value = true
+      try {
+        // 加密密码
+        registerForm.password = md5(registerForm.password)
+        await register(registerForm)
+        ElMessage.success('注册成功，请登录')
+        activeName.value = 'login'
+      } catch (error) {
+        console.error(error)
+      } finally {
+        loading.value = false
+      }
+    }
+  })
+}
 </script>
 
 <style scoped>
-.login-page {
-  position: relative;
-  width: 100%;
+/* 主容器：渐变背景 */
+.login-container {
   height: 100vh;
-  overflow: hidden;
-  font-family: "Segoe UI", "PingFang SC", sans-serif;
-}
-
-.background {
-  display: flex;
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-}
-
-.bg-left {
-  flex: 1;
-  background-color: #ffffff;
-}
-
-.bg-right {
-  flex: 1;
-  background-color: #0b3c63;
-  position: relative;
-  overflow: hidden;
-}
-
-.circle {
-  position: absolute;
-  top: 80px;
-  right: 100px;
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.triangle {
-  position: absolute;
-  bottom: 100px;
-  left: 80px;
-  width: 0;
-  height: 0;
-  border-left: 60px solid transparent;
-  border-right: 60px solid transparent;
-  border-bottom: 100px solid rgba(255, 255, 255, 0.08);
-}
-
-/* 登录卡片 */
-.login-card {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 900px;
-  height: 500px;
-  transform: translate(-50%, -50%);
-  display: flex;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
-  border-radius: 20px;
-  overflow: hidden;
-  z-index: 1;
-}
-
-/* 表单部分 */
-.login-form {
-  flex: 1;
-  background-color: white;
-  padding: 60px 80px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.tabs {
-  display: flex;
-  gap: 40px;
-  margin-bottom: 40px;
-  font-size: 22px;
-  font-weight: 600;
-}
-
-.tabs span {
-  cursor: pointer;
-  color: #aaa;
-  transition: 0.3s;
-}
-
-.tabs span.active {
-  color: #0b3c63;
-  border-bottom: 3px solid #0b3c63;
-  padding-bottom: 6px;
-}
-
-.el-form-item {
-  margin-bottom: 24px;
-}
-
-.el-input {
-  border: none;
-  border-bottom: 1px solid #ccc;
-  border-radius: 0;
-}
-
-.el-input:focus-within {
-  border-bottom-color: #0b3c63;
-}
-
-.login-btn {
-  width: 100%;
-  margin-top: 20px;
-  background-color: #0b3c63;
-  border: none;
-}
-
-/* 右侧欢迎语部分 */
-.welcome-section {
-  flex: 1;
-  background-color: #0b3c63;
-  color: #fff;
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
+  background: linear-gradient(135deg, #fff5e6 0%, #ffedcc 100%);
+  position: relative;
+  overflow: hidden;
 }
 
-.welcome-content {
+/* 装饰性元素 */
+.decoration {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(to bottom right, #ff6600, #ff9838);
+  opacity: 0.1;
+  z-index: 0;
+}
+.circle-1 { width: 400px; height: 400px; top: -100px; left: -100px; }
+.circle-2 { width: 300px; height: 300px; bottom: -50px; right: -50px; }
+
+/* 卡片样式 */
+.login-card {
+  width: 420px;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(255, 102, 0, 0.1);
+  border: none;
+  z-index: 1;
+  padding: 10px;
+}
+
+.login-header {
   text-align: center;
-  padding: 0 40px;
+  margin-bottom: 30px;
 }
 
-.welcome-content h2 {
-  font-size: 32px;
+.login-header h2 {
+  color: #333;
+  margin: 10px 0 5px;
+  font-size: 24px;
+}
+
+.login-header p {
+  color: #999;
+  font-size: 14px;
+}
+
+.login-tabs :deep(.el-tabs__item.is-active) {
+  color: #ff6600;
+  font-weight: bold;
+}
+
+.login-tabs :deep(.el-tabs__active-bar) {
+  background-color: #ff6600;
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
 }
 
-.welcome-content p {
-  font-size: 18px;
-  line-height: 1.6;
+.submit-btn {
+  width: 100%;
+  height: 45px;
+  font-size: 16px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #ff9838, #ff6600);
+  border: none;
+  margin-top: 10px;
+}
+
+.submit-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3);
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 30px;
+  font-size: 12px;
+  color: #bbb;
+}
+
+/* 覆盖 Element Plus 输入框焦点颜色 */
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #ff6600 inset !important;
 }
 </style>
