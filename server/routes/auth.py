@@ -3,7 +3,6 @@ from db import get_db_connection
 from utils import md5, generate_token, token_store
 import pymysql
 
-# 创建蓝图对象
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route("/login", methods=["POST"])
@@ -19,6 +18,7 @@ def login():
     cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     try:
+        # ✅ 修正：只查询存在的字段 (user_name, password_md5)
         cursor.execute("SELECT user_name, password_md5 FROM users WHERE user_name = %s", (user_name,))
         user = cursor.fetchone()
 
@@ -26,8 +26,8 @@ def login():
             return jsonify({"message": "用户不存在"}), 404
 
         if md5(password) == user["password_md5"]:
-            token = generate_token(user_name)  # ✅ 存入 Map
-            print(f"[LOGIN] 用户 {user_name} 登录成功，token 已存储")
+            token = generate_token(user_name)
+            print(f"[LOGIN] 用户 {user_name} 登录成功")
             return jsonify({"token": token, "message": "登录成功"}), 200
         else:
             return jsonify({"message": "用户名或密码错误"}), 401
@@ -52,15 +52,20 @@ def register():
     cursor = conn.cursor()
 
     try:
+        # ✅ 检查用户是否存在
         cursor.execute("SELECT user_name FROM users WHERE user_name = %s", (user_name,))
         if cursor.fetchone():
             return jsonify({"message": "用户名已存在"}), 409
 
         hashed_password = md5(password)
+        
+        # ✅ 插入语句：对应 users 表结构
+        # 注意：nickname, phone 等字段允许为空(NULL)，注册时可以先不填
         cursor.execute("""
             INSERT INTO users (user_name, password_md5, create_time)
             VALUES (%s, %s, NOW())
         """, (user_name, hashed_password))
+        
         conn.commit()
 
         print(f"[REGISTER] 用户 {user_name} 注册成功")

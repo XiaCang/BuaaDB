@@ -3,7 +3,6 @@ from db import get_db_connection
 from utils import verify_token
 import pymysql
 
-# 1. 创建蓝图
 user_bp = Blueprint('user', __name__)
 
 # ====== 获取用户信息 ======
@@ -20,12 +19,12 @@ def get_user_info():
 
     # 2. 查询数据库
     conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor) # 使用 DictCursor 让结果变成字典
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     try:
-        # 注意：这里不需要查密码，保护隐私
+        # ✅ 修正：删除了 'id'，因为你的表中只有 user_name 作为标识
         sql = """
-            SELECT id, user_name, nickname, avatar_url, phone, intro, create_time 
+            SELECT user_name, nickname, avatar_url, phone, intro, create_time 
             FROM users 
             WHERE user_name = %s
         """
@@ -35,8 +34,7 @@ def get_user_info():
         if not user:
             return jsonify({"message": "用户不存在"}), 404
         
-        # 3. 返回数据
-        # 把 create_time 转成字符串，否则 JSON 序列化可能会报错
+        # 3. 处理时间格式
         if user.get('create_time'):
             user['create_time'] = str(user['create_time'])
 
@@ -53,14 +51,12 @@ def get_user_info():
 # ====== 更新用户信息 ======
 @user_bp.route("/update_user", methods=["POST"])
 def update_user_info():
-    # 1. 验证 Token
     token = request.headers.get("Authorization")
     user_name = verify_token(token) if token else None
     
     if not user_name:
         return jsonify({"message": "未授权的操作"}), 403
 
-    # 2. 获取前端传来的参数
     data = request.json
     nickname = data.get("nickname")
     avatar_url = data.get("avatar_url")
@@ -71,9 +67,7 @@ def update_user_info():
     cursor = conn.cursor()
 
     try:
-        # 3. 执行更新 SQL
-        # 这种写法会一次性更新所有字段，如果前端传的是空值，也会更新为空
-        # 如果希望“只更新非空字段”，逻辑会稍微复杂一点，目前这样写最简单稳妥
+        # ✅ 这里的字段名与你的数据库截图一致，无需修改
         sql = """
             UPDATE users 
             SET nickname = %s, avatar_url = %s, phone = %s, intro = %s 
