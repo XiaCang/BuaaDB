@@ -13,11 +13,6 @@ const router = createRouter({
       component: HomeView,
       children: [
         {
-          path: 'user',
-          name: 'user',
-          component: () => import('../pages/Profile.vue')
-        },
-        {
           path: 'order',
           name: 'order',
           component: () => import('../pages/MyOrder.vue')
@@ -26,13 +21,19 @@ const router = createRouter({
           path: 'favorite',
           name: 'favorite',
           component: () => import('../pages/Favorite.vue')
-        },
-        {
-          path : 'create_product',
-          name: 'create_product',
-          component: () => import('../pages/CreateProduct.vue')
         }
       ]
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../pages/Profile.vue')
+    },
+    ,
+    {
+      path : '/create_product',
+      name: 'create_product',
+      component: () => import('../pages/CreateProduct.vue')
     },
     {
       path: '/login',

@@ -118,7 +118,7 @@ const handleCommand = (c) => {
   else router.push(`/${c}`)
 }
 
-const handleCreate = () => router.push('/create_product')
+const handleCreate = () => router.push({ name: 'create_product' })
 
 onMounted(fetchData)
 </script>
