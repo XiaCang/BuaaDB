@@ -15,12 +15,7 @@ const router = createRouter({
         {
           path: 'user',
           name: 'user',
-          component: () => import('../pages/UserInfo.vue')
-        },
-        {
-          path: 'goods',
-          name: 'goods',
-          component: () => import('../pages/Goods.vue')
+          component: () => import('../pages/Profile.vue')
         },
         {
           path: 'order',
@@ -33,9 +28,9 @@ const router = createRouter({
           component: () => import('../pages/Favorite.vue')
         },
         {
-          path: 'mygoods',
-          name: 'mygoods',
-          component: () => import('../pages/MyGoods.vue')
+          path : 'create_product',
+          name: 'create_product',
+          component: () => import('../pages/CreateProduct.vue')
         }
       ]
     },
