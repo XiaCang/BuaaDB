@@ -86,11 +86,7 @@
                 <strong>{{ currentContactInfo?.displayName || `用户 ${currentTargetId}` }}</strong>
                 <span class="online-status" v-if="currentContactInfo?.online">在线</span>
               </div>
-              <div class="header-actions">
-                <el-button type="text" :icon="Picture" title="发送图片" />
-                <el-button type="text" :icon="Microphone" title="语音消息" />
-                <el-button type="text" :icon="ChatDotRound" title="聊天设置" />
-              </div>
+
             </div>
 
             <!-- 消息显示区域 -->
@@ -487,7 +483,7 @@ onMounted(() => {
   fetchMsgs()
   
   // 定时刷新消息（每30秒）
-  refreshInterval = setInterval(fetchMsgs, 30000)
+  refreshInterval = setInterval(fetchMsgs, 3000)
 })
 
 onUnmounted(() => {
