@@ -39,6 +39,18 @@
           <el-input v-model="productForm.name" placeholder="请输入商品名称" />
         </el-form-item>
 
+        <el-form-item label="物品类别" prop="category_id">
+          <el-select v-model="productForm.category_id" placeholder="请选择商品分类" style="width: 100%">
+            <el-option label="未分类 / 不选择" value="" />
+            <el-option 
+              v-for="item in categoryList" 
+              :key="item.category_id" 
+              :label="item.category_name" 
+              :value="item.category_id" 
+            />
+          </el-select>
+        </el-form-item>
+
         <el-form-item label="商品价格 (元)" prop="price">
           <el-input-number 
             v-model="productForm.price" 
@@ -79,21 +91,23 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, Plus } from '@element-plus/icons-vue'
-import { getProductDetail, modifyProduct, uploadFile } from '@/api/index'
+import { getProductDetail, modifyProduct, uploadFile, getCategories } from '@/api/index'
 
 const router = useRouter()
-const route = useRoute() // 用于获取 URL 中的 ID 参数
+const route = useRoute()
 const productFormRef = ref(null)
-const pageLoading = ref(false)   // 初始化加载状态
-const submitLoading = ref(false) // 提交按钮状态
+const pageLoading = ref(false) 
+const submitLoading = ref(false)
+const categoryList = ref([]) // 分类列表
 
-// 表单数据
+// 表单数据，增加 category_id
 const productForm = reactive({
-  id: '', // 存储 ID
+  id: '', 
   name: '',
   price: 0,
   image_url: '',
-  description: ''
+  description: '',
+  category_id: '' // 默认为空
 })
 
 const rules = {
@@ -103,9 +117,19 @@ const rules = {
   description: [{ required: true, message: '详细描述不能为空', trigger: 'blur' }]
 }
 
-// 1. 页面加载：获取旧数据
+// 获取分类列表
+const fetchCategories = async () => {
+  try {
+    const res = await getCategories()
+    categoryList.value = res.categories || []
+  } catch (error) {
+    console.error('获取分类失败', error)
+  }
+}
+
+// 页面加载：获取旧数据并回填
 const initData = async () => {
-  const productId = route.params.id // 假设路由为 /edit/:id
+  const productId = route.params.id 
   if (!productId) {
     ElMessage.error('无效的商品ID')
     return router.back()
@@ -113,21 +137,26 @@ const initData = async () => {
 
   pageLoading.value = true
   try {
+    // 并行获取分类和商品详情
+    await fetchCategories()
     const res = await getProductDetail(productId)
+    
     // 将获取到的详情填入表单
     productForm.id = res.id
     productForm.name = res.name
     productForm.price = res.price
     productForm.image_url = res.image_url
     productForm.description = res.description
+    // 回填分类ID（如果后端返回了该字段）
+    productForm.category_id = res.category_id || '' 
   } catch (error) {
-    console.error('获取详情失败', error)
+    console.error('初始化数据失败', error)
   } finally {
     pageLoading.value = false
   }
 }
 
-// 2. 处理图片更换
+// 处理图片更换
 const handleImageUpload = async (options) => {
   const formData = new FormData()
   formData.append('file', options.file)
@@ -136,22 +165,21 @@ const handleImageUpload = async (options) => {
   try {
     const res = await uploadFile(formData)
     productForm.image_url = res.url
-    ElMessage.success('图片上传成功')
+    ElMessage.success('图片更换成功')
+    productFormRef.value.validateField('image_url')
   } catch (error) {}
 }
 
-// 3. 提交修改
+// 提交修改
 const submitForm = async () => {
   if (!productFormRef.value) return
   await productFormRef.value.validate(async (valid) => {
     if (valid) {
       submitLoading.value = true
       try {
-        // 调用 modifyProduct 接口
-        // 注意：这里会将 ID 一并发送给后端
         const res = await modifyProduct(productForm)
         ElMessage.success(res.message || '修改成功！')
-        router.push('/') // 修改完回到首页
+        router.push('/') 
       } catch (e) {
       } finally {
         submitLoading.value = false
@@ -164,7 +192,6 @@ onMounted(initData)
 </script>
 
 <style scoped>
-/* 样式复用自 CreateProduct，保持 UI 一致性 */
 .modify-container {
   padding: 30px 20px;
   background-color: #f8f9fa;
@@ -190,7 +217,6 @@ onMounted(initData)
 .back-btn:hover { color: #ff6600; }
 .title { font-size: 18px; font-weight: bold; }
 
-/* 溢出修复样式 */
 .upload-container :deep(.el-upload) {
   border: 2px dashed #e0e0e0;
   border-radius: 8px;
@@ -212,7 +238,7 @@ onMounted(initData)
 
 .uploaded-img {
   width: 100%; height: 100%;
-  object-fit: contain; /* 保证高图不溢出且完整显示 */
+  object-fit: contain; 
 }
 
 .upload-placeholder {
@@ -236,6 +262,7 @@ onMounted(initData)
   border: none;
   padding: 10px 30px;
   border-radius: 8px;
+  color: white;
 }
 .btn-orange:hover { opacity: 0.9; }
 </style>

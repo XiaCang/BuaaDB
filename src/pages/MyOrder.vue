@@ -3,7 +3,7 @@
     <div class="top-nav">
       <el-button link @click="router.back()" class="back-link">
         <el-icon><ArrowLeft /></el-icon>
-        返回个人中心
+        返回
       </el-button>
       <h2 class="page-title">我的订单</h2>
     </div>

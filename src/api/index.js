@@ -18,6 +18,7 @@ export const createProduct = (data) => request.post('/create_product', data)
 export const modifyProduct = (data) => request.post('/modify_product', data) // 建议后端该接口带上ID
 export const deleteProduct = (id) => request.delete(`/delete_product/${id}`)
 export const buyProduct = (id) => request.post(`/buy_product/${id}`)
+export const getCategories = () => request.get('/get_categories')
 
 // 订单与收藏
 export const getOrders = () => request.get('/get_orders')

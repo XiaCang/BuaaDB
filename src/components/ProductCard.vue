@@ -6,18 +6,18 @@
     </div>
     
     <div class="content">
-      <div class="price-tag">¥{{ item.price }}</div>
+      <div class="price-tag" :class="{ 'is-sold': item.status === 'sold' }">¥{{ item.price }}</div>
       <h4 class="title">{{ item.name }}</h4>
       
       <div class="footer">
         <template v-if="!isMine">
           <span class="seller">ID: {{ item.seller_id }}</span>
           <el-button size="small" class="btn-favor" @click.stop="handleFavor(item)">收藏</el-button>
-          <el-button size="small" class="btn-buy" @click.stop="handleBuy">购买</el-button>
+          <el-button size="small" class="btn-buy" @click.stop="handleBuy" :disabled="item.status !== 'active'">{{ item.status === 'active' ? '购买' : '已售出' }}</el-button>
         </template>
         
         <template v-else>
-          <el-button size="small" class="btn-edit" plain type="primary" @click.stop="handleEdit">编辑</el-button>
+          <el-button size="small" class="btn-edit" plain type="primary" @click.stop="handleEdit" :disabled="item.status !== 'active'">编辑</el-button>
           <el-button size="small" class="btn-delete" plain type="danger" @click.stop="handleDelete">删除</el-button>
         </template>
       </div>
@@ -70,6 +70,11 @@ const handleFavor = async (item) => {
 </script>
 
 <style scoped>
+
+.is-sold {
+  color: #999 !important;
+  text-decoration: line-through; /* 删除线 */
+}
 .p-card {
   border-radius: 12px;
   margin-bottom: 20px;
