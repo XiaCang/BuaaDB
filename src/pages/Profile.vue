@@ -1,25 +1,23 @@
 <template>
   <div class="profile-container">
+    <div class="top-nav">
+      <el-button link @click="router.back()" class="back-link">
+        <el-icon><ArrowLeft /></el-icon>
+        返回主页
+      </el-button>
+    </div>
+
     <el-card class="profile-card">
       <div class="profile-layout">
         <div class="side-info">
           <div class="avatar-wrapper">
             <el-avatar :size="120" :src="userInfo.avatar_url" />
-            <el-upload
-              class="avatar-edit-btn"
-              action="#"
-              :show-file-list="false"
-              :http-request="handleAvatarUpdate"
-            >
+            <el-upload class="avatar-edit-btn" action="#" :show-file-list="false" :http-request="handleAvatarUpdate">
               <el-icon><Camera /></el-icon>
             </el-upload>
           </div>
-          <h2 class="nickname-display">{{ userInfo.nickname || '未设置昵称' }}</h2>
+          <h2 class="nickname-display">{{ userInfo.nickname || '未设置' }}</h2>
           <el-tag type="warning" effect="dark" round>普通用户</el-tag>
-          <div class="meta-info">
-            <p>用户 ID: {{ userInfo.id }}</p>
-            <p>加入于: {{ formatDate(userInfo.created_at) }}</p>
-          </div>
         </div>
 
         <div class="main-form">
@@ -47,9 +45,11 @@
 </template>
 
 <script setup>
+import { ArrowLeft, Camera } from '@element-plus/icons-vue' // 引入图标
+import { useRouter } from 'vue-router'
+const router = useRouter()
 import { ref, onMounted, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Camera } from '@element-plus/icons-vue'
 import { getUserInfo, updateUserInfo, uploadFile } from '@/api/index'
 import { useUserStore } from '@/stores/user'
 
@@ -112,9 +112,25 @@ onMounted(loadData)
 </script>
 
 <style scoped>
+.top-nav {
+  margin-bottom: 20px;
+}
+
+.back-link {
+  font-size: 15px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.back-link:hover {
+  color: #ff6600;
+}
+
 .profile-container {
   max-width: 900px;
-  margin: 40px auto;
+  margin: 20px auto; /* 缩小顶部边距 */
   padding: 0 20px;
 }
 

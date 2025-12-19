@@ -96,6 +96,10 @@ const fetchData = async () => {
   try {
     const [prodRes, msgRes] = await Promise.all([getProducts(), getMsgs()])
     products.value = prodRes.products || []
+
+    console.log("In Home : product = " , products.value);
+    
+
     msgCount.value = msgRes.messages?.length || 0
   } catch (err) {}
   loading.value = false
@@ -110,7 +114,7 @@ const filteredProducts = computed(() => {
 
 // 过滤“我的商品” (根据当前登录用户ID)
 const myProducts = computed(() => {
-  return products.value.filter(p => p.seller_id === userStore.userInfo.id)
+  return products.value.filter(p => p.seller_id === userStore.userInfo.user_name)
 })
 
 const handleCommand = (c) => {

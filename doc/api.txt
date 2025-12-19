@@ -71,7 +71,7 @@
 
 返回值
 {
-  "id": id, // 用户id
+  "user_name": user_name, // 用户名
   "nickname": nickname, // 用户昵称
   "avatar_url": avatar_url, // 用户头像
   "phone": phone, // 用户手机号
