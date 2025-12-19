@@ -23,7 +23,6 @@ def get_products():
             SELECT p.*, u.nickname as seller_name, u.avatar_url as seller_avatar
             FROM products p
             LEFT JOIN users u ON p.owner_id = u.user_name
-            WHERE p.status = 'active'
             ORDER BY p.create_time DESC
         """
         cursor.execute(sql)
