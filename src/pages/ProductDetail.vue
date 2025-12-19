@@ -268,6 +268,11 @@ const handlePublishComment = async () => {
 const handleContactSeller = () => {
   if (!userStore.token) return router.push('/login')
   // 直接跳转到带 ID 的消息路径
+  debugger
+  if (product.value.seller_id === userStore.userInfo.user_name) {
+    ElMessage.warning('不能给自己发消息')
+    return
+  }
   router.push(`/messages/${product.value.seller_id}`)
 }
 
