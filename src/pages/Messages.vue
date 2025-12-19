@@ -24,7 +24,7 @@
           <div class="list-header">
             <!-- 返回 -->
             <span>
-              <el-button link @click="router.back()" class="back-btn">
+              <el-button link @click="router.push(`/`)" class="back-btn">
             <el-icon><ArrowLeft /></el-icon> 
             最近聊天</el-button>
             </span>
@@ -52,9 +52,9 @@
                 <div class="name-time">
                   <span class="name">
                     {{ contact.displayName || `用户 ${contact.userId}` }}
-                    <span v-if="contact.unreadCount > 0" class="unread-badge">
+                    <!-- <span v-if="contact.unreadCount > 0" class="unread-badge">
                       {{ contact.unreadCount > 99 ? '99+' : contact.unreadCount }}
-                    </span>
+                    </span> -->
                   </span>
                   <span class="time">{{ formatTimeShort(contact.lastTime) }}</span>
                 </div>
