@@ -86,3 +86,45 @@ def update_user_info():
     finally:
         cursor.close()
         conn.close()
+
+# ====== 获取指定用户信息 (Public) ======
+# API: GET /api/user/<id>
+@user_bp.route("/user/<target_id>", methods=["GET"])
+def get_target_user_info(target_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+    try:
+        # 注意：这里我们用 target_id 去匹配数据库里的 user_name
+        # 因为你的数据库设计中，user_name 就是唯一标识符
+        sql = """
+            SELECT user_name, nickname, avatar_url, phone, intro, create_time 
+            FROM users 
+            WHERE user_name = %s
+        """
+        cursor.execute(sql, (target_id,))
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({"message": "用户不存在"}), 404
+        
+        # 格式化返回数据 (对应 API 文档)
+        response_data = {
+            "user_name": user["user_name"],
+            "nickname": user["nickname"],
+            "avatar_url": user["avatar_url"],
+            "phone": user["phone"],
+            "intro": user["intro"],
+            # 数据库叫 create_time，API文档要求返回 created_at
+            "created_at": str(user["create_time"]) if user["create_time"] else None,
+            "message": "获取成功"
+        }
+
+        return jsonify(response_data), 200
+
+    except Exception as e:
+        print(f"[ERROR] 获取指定用户信息失败: {e}")
+        return jsonify({"message": "服务器内部错误"}), 500
+    finally:
+        cursor.close()
+        conn.close()
