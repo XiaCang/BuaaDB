@@ -150,6 +150,7 @@
   "seller_id": seller_id, // 商品卖家id
   "created_at": created_at, // 商品创建时间
   "updated_at": updated_at, // 商品更新时间
+  "category_id": category_id, // 商品分类
   "status": status, // 商品状态  可以是"active","inactive","deleted","sold"之一，分别表示上架，下架，删除，已售出
   "message": msg  // msg为服务器返回的信息
 }
@@ -165,6 +166,7 @@
   "price": price, // 商品价格
   "image_url": image_url, // 商品图片
   "description": description, // 商品描述
+  "category_id": category_id // 商品分类
 }
 
 返回值
@@ -184,6 +186,7 @@
   "price": price, // 商品价格
   "image_url": image_url, // 商品图片
   "description": description, // 商品描述
+  "category_id": category_id // 商品分类
 }
 
 返回值
@@ -209,11 +212,29 @@
       "seller_id": seller_id, // 商品卖家id
       "created_at": created_at, // 商品创建时间
       "updated_at": updated_at, // 商品更新时间
+      "category_id": category_id, // 商品分类
       "status": status, // 商品状态  可以是"active","inactive","deleted","sold"之一，分别表示上架，下架，删除，已售出
       },
       ......
     }
   ], // 商品列表
+  "message": msg  // msg为服务器返回的信息
+}
+
+/api/get_categories
+
+描述：获取所有商品分类
+类型：GET
+
+返回值
+{
+  "categories": [
+    {
+      "id": id, // 分类id
+      "name": name // 分类名称
+    },
+    ......
+  ], // 分类列表
   "message": msg  // msg为服务器返回的信息
 }
 
