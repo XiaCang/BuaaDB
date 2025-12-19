@@ -52,7 +52,7 @@ const handleDelete = () => {
 
 const handleEdit = () => {
   // 跳转到修改页面，带上ID
-  // router.push(`/edit_product/${props.item.id}`)
+  router.push(`/modify_product/${props.item.id}`)
 }
 </script>
 

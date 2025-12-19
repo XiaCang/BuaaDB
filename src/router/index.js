@@ -11,25 +11,22 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
-      children: [
-        {
-          path: 'order',
-          name: 'order',
-          component: () => import('../pages/MyOrder.vue')
-        },
-        {
-          path: 'favorite',
-          name: 'favorite',
-          component: () => import('../pages/Favorite.vue')
-        }
-      ]
     },
     {
       path: '/profile',
       name: 'profile',
       component: () => import('../pages/Profile.vue')
     },
-    ,
+    {
+      path: '/order',
+      name: 'order',
+      component: () => import('../pages/MyOrder.vue')
+    },
+    {
+      path: '/favorite',
+      name: 'favorite',
+      component: () => import('../pages/Favorite.vue')
+    },
     {
       path : '/create_product',
       name: 'create_product',
@@ -40,6 +37,11 @@ const router = createRouter({
       name: 'login',
       component: LoginView,
     },
+    {
+      path: '/modify_product/:id',
+      name: 'modify_product',
+      component: () => import('../pages/ModifyProduct.vue')
+    }
   ],
 })
 
