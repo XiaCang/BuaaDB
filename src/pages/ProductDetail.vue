@@ -145,7 +145,7 @@ import { ref, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Star, ChatDotRound, Picture } from '@element-plus/icons-vue'
-import { getProductDetail, buyProduct, favoriteProduct, getComments, publishComment, getSelfInfo } from '@/api/index'
+import { getProductDetail, buyProduct, favoriteProduct, getComments, publishComment, getUserInfo } from '@/api/index'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()

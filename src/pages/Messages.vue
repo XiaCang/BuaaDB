@@ -1,11 +1,34 @@
 <template>
-  <div class="messages-container">
-    <el-card class="chat-card" :body-style="{ padding: '0px' }">
-      <div class="chat-layout">
-        <!-- 左侧联系人列表 -->
-        <div class="contact-list">
+  <el-container class="messages-container" direction="vertical">
+    <el-header class="page-header">
+
+      <h2>消息中心</h2>
+      <div class="header-actions">
+        <el-input
+          v-model="searchUser"
+          placeholder="搜索用户..."
+          class="search-input"
+          :prefix-icon="Search"
+          style="width: 200px"
+        />
+        <el-button type="primary" class="btn-orange" :icon="Plus">
+          新建聊天
+        </el-button>
+      </div>
+    </el-header>
+    
+    <el-container class="main-container">
+      <!-- 左侧联系人列表 -->
+      <el-aside width="300px" class="contact-aside">
+        <el-card class="contact-card" :body-style="{ padding: '0px' }">
           <div class="list-header">
-            <h3>消息中心</h3>
+            <!-- 返回 -->
+            <span>
+              <el-button link @click="router.back()" class="back-btn">
+            <el-icon><ArrowLeft /></el-icon> 
+            最近聊天</el-button>
+            </span>
+            
           </div>
           <el-scrollbar class="contact-scrollbar">
             <div 
@@ -21,14 +44,14 @@
               <el-avatar 
                 :size="40" 
                 class="contact-avatar"
-                :src="contact.avatar || contact.sender_avatar"
+                :src="contact.avatar"
               >
-                {{ contact.nickname?.charAt(0) || contact.userId?.charAt(0) }}
+                {{ contact.displayName?.charAt(0) || contact.userId?.charAt(0) }}
               </el-avatar>
               <div class="contact-info">
                 <div class="name-time">
                   <span class="name">
-                    {{ contact.nickname || contact.sender_nickname || `用户 ${contact.userId}` }}
+                    {{ contact.displayName || `用户 ${contact.userId}` }}
                     <span v-if="contact.unreadCount > 0" class="unread-badge">
                       {{ contact.unreadCount > 99 ? '99+' : contact.unreadCount }}
                     </span>
@@ -44,69 +67,78 @@
               :image-size="80"
             />
           </el-scrollbar>
-        </div>
+        </el-card>
+      </el-aside>
 
-        <!-- 右侧聊天窗口 -->
-        <div class="chat-window">
+      <!-- 右侧聊天窗口 -->
+      <el-main class="chat-main">
+        <el-card class="chat-card" :body-style="{ display: 'flex', flexDirection: 'column', height: '100%' }">
           <template v-if="currentTargetId">
             <div class="chat-header">
               <el-avatar 
                 :size="32" 
-                :src="currentContactInfo?.avatar || currentContactInfo?.sender_avatar"
+                :src="currentContactInfo?.avatar"
                 class="header-avatar"
               >
-                {{ currentContactInfo?.nickname?.charAt(0) || currentTargetId?.charAt(0) }}
+                {{ currentContactInfo?.displayName?.charAt(0) || currentTargetId?.charAt(0) }}
               </el-avatar>
               <div class="header-info">
-                <strong>{{ currentContactInfo?.nickname || currentContactInfo?.sender_nickname || `用户 ${currentTargetId}` }}</strong>
+                <strong>{{ currentContactInfo?.displayName || `用户 ${currentTargetId}` }}</strong>
                 <span class="online-status" v-if="currentContactInfo?.online">在线</span>
+              </div>
+              <div class="header-actions">
+                <el-button type="text" :icon="Picture" title="发送图片" />
+                <el-button type="text" :icon="Microphone" title="语音消息" />
+                <el-button type="text" :icon="ChatDotRound" title="聊天设置" />
               </div>
             </div>
 
             <!-- 消息显示区域 -->
-            <el-scrollbar 
-              ref="msgScroll" 
-              class="msg-display"
-              @scroll="handleScroll"
-            >
-              <div v-if="loadingHistory" class="loading-more">
-                <el-icon class="is-loading"><Loading /></el-icon>
-                加载中...
-              </div>
-              <div class="msg-content-inner">
-                <div 
-                  v-for="(msg, index) in currentChatHistory" 
-                  :key="msg.message_id || index" 
-                  class="msg-row"
-                  :class="{ 
-                    'is-me': isMyMessage(msg),
-                    'is-system': msg.sender_id === 'system'
-                  }"
-                >
-                  <template v-if="!isSystemMessage(msg)">
-                    <el-avatar 
-                      :size="32" 
-                      class="msg-avatar"
-                      :src="isMyMessage(msg) ? userStore.userInfo.avatar_url : (msg.sender_avatar || currentContactInfo?.sender_avatar)"
-                    >
-                      {{ isMyMessage(msg) ? '我' : (msg.sender_nickname?.charAt(0) || msg.sender_id?.charAt(0)) }}
-                    </el-avatar>
-                  </template>
-                  <div class="msg-bubble" :class="{ 'system-bubble': isSystemMessage(msg) }">
-                    <div class="text">
-                      <span v-if="isSystemMessage(msg)">{{ msg.content }}</span>
-                      <span v-else>{{ msg.content }}</span>
-                    </div>
-                    <div class="msg-time">{{ formatTimeFull(msg.time) }}</div>
-                    <div v-if="isMyMessage(msg)" class="msg-status">
-                      <el-icon v-if="msg.status === 'sending'" class="sending-icon"><Loading /></el-icon>
-                      <el-icon v-else-if="msg.status === 'failed'" class="failed-icon"><CircleClose /></el-icon>
-                      <el-icon v-else class="success-icon"><CircleCheck /></el-icon>
+            <div class="msg-display-wrapper">
+              <el-scrollbar 
+                ref="msgScroll" 
+                class="msg-display"
+                @scroll="handleScroll"
+              >
+                <div v-if="loadingHistory" class="loading-more">
+                  <el-icon class="is-loading"><Loading /></el-icon>
+                  加载中...
+                </div>
+                <div class="msg-content-inner">
+                  <div 
+                    v-for="(msg, index) in currentChatHistory" 
+                    :key="msg.message_id || index" 
+                    class="msg-row"
+                    :class="{ 
+                      'is-me': isMyMessage(msg),
+                      'is-system': msg.sender_id === 'system'
+                    }"
+                  >
+                    <template v-if="!isSystemMessage(msg)">
+                      <el-avatar 
+                        :size="32" 
+                        class="msg-avatar"
+                        :src="isMyMessage(msg) ? userStore.userInfo.avatar_url : (msg.sender_avatar || currentContactInfo?.avatar)"
+                      >
+                        {{ isMyMessage(msg) ? userStore.userInfo.nickname?.charAt(0) || '我' : (currentContactInfo?.displayName?.charAt(0) || currentTargetId?.charAt(0)) }}
+                      </el-avatar>
+                    </template>
+                    <div class="msg-bubble" :class="{ 'system-bubble': isSystemMessage(msg) }">
+                      <div class="text">
+                        <span v-if="isSystemMessage(msg)">{{ msg.content }}</span>
+                        <span v-else>{{ msg.content }}</span>
+                      </div>
+                      <div class="msg-time">{{ formatTimeFull(msg.time) }}</div>
+                      <div v-if="isMyMessage(msg)" class="msg-status">
+                        <el-icon v-if="msg.status === 'sending'" class="sending-icon"><Loading /></el-icon>
+                        <el-icon v-else-if="msg.status === 'failed'" class="failed-icon"><CircleClose /></el-icon>
+                        <el-icon v-else class="success-icon"><CircleCheck /></el-icon>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </el-scrollbar>
+              </el-scrollbar>
+            </div>
 
             <!-- 输入区域 -->
             <div class="input-area">
@@ -122,16 +154,23 @@
                 class="msg-input"
               />
               <div class="send-bar">
-                <span class="tip">Enter 发送，Shift+Enter 换行</span>
-                <el-button 
-                  type="primary" 
-                  class="btn-orange" 
-                  @click="handleSend" 
-                  :loading="sending"
-                  :disabled="!inputMsg.trim()"
-                >
-                  发送
-                </el-button>
+                <div class="input-actions">
+                  <el-button type="text" :icon="Picture" title="图片" />
+                  <el-button type="text" :icon="Microphone" title="语音" />
+                  <el-button type="text" :icon="ChatDotRound" title="表情" />
+                </div>
+                <div class="send-actions">
+                  <span class="tip">Enter 发送，Shift+Enter 换行</span>
+                  <el-button 
+                    type="primary" 
+                    class="btn-orange" 
+                    @click="handleSend" 
+                    :loading="sending"
+                    :disabled="!inputMsg.trim()"
+                  >
+                    发送
+                  </el-button>
+                </div>
               </div>
             </div>
           </template>
@@ -139,27 +178,16 @@
           <!-- 未选择联系人的状态 -->
           <div v-else class="empty-chat">
             <div class="empty-illustration">
-              <el-icon :size="80" color="#e0e0e0"><ChatLineRound /></el-icon>
+              <el-icon :size="120" color="#e0e0e0"><ChatLineRound /></el-icon>
             </div>
             <h3>欢迎来到消息中心</h3>
             <p>选择左侧的联系人开始聊天</p>
             <p class="empty-tip">或通过搜索找到你想联系的人</p>
-            <div class="empty-actions">
-              <el-input
-                v-model="searchUser"
-                placeholder="搜索用户..."
-                class="search-input"
-                :prefix-icon="Search"
-              />
-              <el-button type="primary" class="btn-orange" :icon="Plus">
-                新建聊天
-              </el-button>
-            </div>
           </div>
-        </div>
-      </div>
-    </el-card>
-  </div>
+        </el-card>
+      </el-main>
+    </el-container>
+  </el-container>
 </template>
 
 <script setup>
@@ -198,29 +226,35 @@ const hasMore = ref(true)
 // 当前聊天对象ID（从路由参数获取）
 const currentTargetId = computed(() => route.params.id || null)
 
-// 处理后的联系人列表
+// 处理后的联系人列表 - 修复显示自己信息的问题
 const processedContactList = computed(() => {
   const contacts = {}
   const myId = userStore.userInfo.user_name
   
   rawMessages.value.forEach(msg => {
-    // 确定对方ID
-    const otherId = msg.sender_id === myId ? msg.receiver_id : msg.sender_id
+    // 确定对方ID：如果是我发送的消息，对方是接收者；如果是对方发送的消息，对方是发送者
+    const isMyMessage = msg.sender_id === myId
+    const otherId = isMyMessage ? msg.receiver_id : msg.sender_id
+    
+    // 如果对方ID不存在，跳过
+    if (!otherId || otherId === myId) return
     
     if (!contacts[otherId]) {
-      contacts[otherId] = {
+      // 如果是对方发送的消息，使用对方的昵称和头像
+      // 如果是我发送的消息，暂时没有对方信息，只存储ID
+      const contactInfo = {
         userId: otherId,
-        nickname: msg.sender_nickname,
-        avatar: msg.sender_avatar,
-        sender_nickname: msg.sender_nickname,
-        sender_avatar: msg.sender_avatar,
+        displayName: isMyMessage ? null : (msg.sender_nickname || `用户 ${otherId}`),
+        avatar: isMyMessage ? null : msg.sender_avatar,
         lastMsg: msg.content,
         lastTime: msg.time,
-        unreadCount: msg.sender_id === otherId ? 1 : 0, // 假设未读消息
+        unreadCount: !isMyMessage ? 1 : 0, // 对方发送的消息才计为未读
         lastMessageId: msg.message_id
       }
+      
+      contacts[otherId] = contactInfo
     } else {
-      // 更新最新消息
+      // 更新现有联系人信息
       const currentTime = new Date(msg.time)
       const lastTime = new Date(contacts[otherId].lastTime)
       
@@ -228,11 +262,17 @@ const processedContactList = computed(() => {
         contacts[otherId].lastMsg = msg.content
         contacts[otherId].lastTime = msg.time
         contacts[otherId].lastMessageId = msg.message_id
-        
-        // 如果是对方发来的消息，增加未读数
-        if (msg.sender_id === otherId) {
-          contacts[otherId].unreadCount += 1
-        }
+      }
+      
+      // 如果是对方发来的消息，增加未读数
+      if (!isMyMessage) {
+        contacts[otherId].unreadCount = (contacts[otherId].unreadCount || 0) + 1
+      }
+      
+      // 如果之前没有对方信息，现在有了（比如对方回复了消息），则更新昵称和头像
+      if (!isMyMessage && (!contacts[otherId].displayName || !contacts[otherId].avatar)) {
+        contacts[otherId].displayName = msg.sender_nickname || `用户 ${otherId}`
+        contacts[otherId].avatar = msg.sender_avatar
       }
     }
   })
@@ -254,10 +294,6 @@ const currentChatHistory = computed(() => {
   if (!currentTargetId.value) return []
   
   const myId = userStore.userInfo.user_name
-
-  console.log("myId = " , myId , "currentTargetId = " , currentTargetId.value);
-  
-
   return rawMessages.value
     .filter(msg => 
       (msg.sender_id === myId && msg.receiver_id === currentTargetId.value) ||
@@ -408,7 +444,7 @@ const formatTimeShort = (time) => {
 const formatTimeFull = (time) => {
   if (!time) return ''
   const date = new Date(time)
-  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`
+  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
 }
 
 // 获取消息列表
@@ -417,9 +453,6 @@ const fetchMsgs = async () => {
     const res = await getMsgs()
     rawMessages.value = res.messages || []
     
-    console.log("In Messages : rawMessages = " , rawMessages.value);
-    
-
     // 如果当前有聊天对象，滚动到底部
     if (currentTargetId.value) {
       scrollToBottom()
@@ -466,51 +499,71 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .messages-container {
-  max-width: 1200px;
-  margin: 20px auto;
-  padding: 0 20px;
-  height: calc(100vh - 100px);
-  min-height: 600px;
-}
-
-.chat-card {
-  height: 100%;
-  border-radius: 12px;
-  border: none;
-  overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-}
-
-.chat-layout {
-  display: flex;
-  height: 100%;
-}
-
-/* 左侧联系人列表 */
-.contact-list {
-  width: 300px;
-  border-right: 1px solid #f0f0f0;
+  height: 100vh;
+  background: #f5f5f5;
   display: flex;
   flex-direction: column;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 60px;
+  background: white;
+  border-bottom: 1px solid #e8e8e8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  z-index: 10;
+  
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+  }
+  
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+}
+
+.main-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+.contact-aside {
   background: #fafafa;
+  border-right: 1px solid #e8e8e8;
+  padding: 16px;
+  
+  .contact-card {
+    height: 100%;
+    border-radius: 8px;
+    border: 1px solid #e8e8e8;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
 }
 
 .list-header {
   padding: 20px;
   border-bottom: 1px solid #f0f0f0;
   background: white;
+  border-radius: 8px 8px 0 0;
   
   h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     color: #333;
   }
 }
 
 .contact-scrollbar {
-  flex: 1;
-  height: 0;
+  height: calc(100vh - 180px);
 }
 
 .contact-item {
@@ -529,7 +582,6 @@ onUnmounted(() => {
   
   &.active {
     background: linear-gradient(135deg, #fff8f0 0%, #fff0e6 100%);
-    border-right: 3px solid #ff6600;
     
     &::before {
       content: '';
@@ -537,8 +589,9 @@ onUnmounted(() => {
       left: 0;
       top: 0;
       bottom: 0;
-      width: 3px;
+      width: 4px;
       background: #ff6600;
+      border-radius: 0 2px 2px 0;
     }
   }
   
@@ -551,7 +604,7 @@ onUnmounted(() => {
 
 .contact-avatar {
   flex-shrink: 0;
-  background: linear-gradient(135deg, #ff9838 0%, #ff6600 100%);
+  background: linear-gradient(135deg, #36c 0%, #63f 100%);
   font-weight: bold;
 }
 
@@ -602,23 +655,26 @@ onUnmounted(() => {
   text-overflow: ellipsis;
 }
 
-/* 右侧聊天窗口 */
-.chat-window {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: white;
+.chat-main {
+  padding: 16px;
+  background: #f5f5f5;
+  
+  .chat-card {
+    height: 100%;
+    border-radius: 8px;
+    border: 1px solid #e8e8e8;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  }
 }
 
 .chat-header {
-  padding: 15px 25px;
+  padding: 20px;
   background: white;
   border-bottom: 1px solid #f0f0f0;
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  z-index: 1;
+  border-radius: 8px 8px 0 0;
   
   .header-avatar {
     background: linear-gradient(135deg, #36c 0%, #63f 100%);
@@ -638,10 +694,29 @@ onUnmounted(() => {
       color: #52c41a;
     }
   }
+  
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    
+    .el-button {
+      color: #666;
+      
+      &:hover {
+        color: #ff6600;
+      }
+    }
+  }
+}
+
+.msg-display-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .msg-display {
-  flex: 1;
+  height: 100%;
   padding: 20px;
   background: #f9f9f9;
 }
@@ -771,25 +846,11 @@ onUnmounted(() => {
   }
 }
 
-/* 输入区域 */
 .input-area {
   padding: 20px;
   background: white;
   border-top: 1px solid #f0f0f0;
-}
-
-.input-tools {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-  
-  .el-button {
-    color: #666;
-    
-    &:hover {
-      color: #ff6600;
-    }
-  }
+  border-radius: 0 0 8px 8px;
 }
 
 .msg-input {
@@ -817,6 +878,25 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-top: 12px;
+}
+
+.input-actions {
+  display: flex;
+  gap: 4px;
+  
+  .el-button {
+    color: #666;
+    
+    &:hover {
+      color: #ff6600;
+    }
+  }
+}
+
+.send-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .tip {
@@ -849,7 +929,6 @@ onUnmounted(() => {
   }
 }
 
-/* 空状态 */
 .empty-chat {
   flex: 1;
   display: flex;
@@ -858,6 +937,7 @@ onUnmounted(() => {
   justify-content: center;
   padding: 40px;
   text-align: center;
+  height: 100%;
   
   .empty-illustration {
     margin-bottom: 20px;
@@ -881,21 +961,8 @@ onUnmounted(() => {
     color: #999;
     font-size: 13px;
   }
-  
-  .empty-actions {
-    margin-top: 30px;
-    width: 300px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  .search-input {
-    width: 100%;
-  }
 }
 
-/* 动画 */
 @keyframes rotating {
   from {
     transform: rotate(0deg);
@@ -907,32 +974,45 @@ onUnmounted(() => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .messages-container {
-    padding: 0 10px;
-    height: calc(100vh - 80px);
-  }
-  
-  .contact-list {
-    width: 100%;
-    border-right: none;
-  }
-  
-  .chat-window {
-    display: none;
+  .page-header {
+    padding: 0 12px;
     
-    &.active {
-      display: flex;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 1000;
+    .header-actions {
+      .search-input {
+        width: 120px;
+      }
+    }
+  }
+  
+  .contact-aside {
+    width: 100% !important;
+    padding: 12px;
+    
+    &.mobile-hidden {
+      display: none;
+    }
+  }
+  
+  .chat-main {
+    padding: 12px;
+    
+    &.mobile-hidden {
+      display: none;
     }
   }
   
   .msg-bubble {
     max-width: 75%;
+  }
+  
+  .send-bar {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .send-actions {
+    justify-content: space-between;
   }
 }
 </style>

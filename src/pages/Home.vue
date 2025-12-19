@@ -18,13 +18,9 @@
 
         <div class="user-actions">
           <el-button class="btn-orange" icon="Plus" @click="handleCreate">发布商品</el-button>
-          
-          <el-badge :value="msgCount" :hidden="msgCount === 0" class="msg-badge">
-            <el-button link class="icon-btn" @click="router.push('/messages')">
-              <el-icon :size="22"><ChatDotRound /></el-icon>
-            </el-button>
-          </el-badge>
-
+          <el-button link class="icon-btn" @click="router.push('/messages')">
+            <el-icon :size="22"><ChatDotRound /></el-icon>
+          </el-button>
           <el-divider direction="vertical" />
 
           <el-dropdown @command="handleCommand">
