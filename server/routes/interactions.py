@@ -257,19 +257,28 @@ def get_msgs():
     conn = get_db_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
     try:
-        # 获取别人发给我的消息
+        # 修改点 1：SQL 语句增加 OR 逻辑
+        # 含义：查找 (我是接收者) 或者 (我是发送者) 的所有消息
         sql = """
             SELECT m.*, u.nickname as sender_nickname, u.avatar_url as sender_avatar
             FROM message m
             JOIN users u ON m.sender_id = u.user_name
-            WHERE m.receiver_id = %s
+            WHERE m.receiver_id = %s OR m.sender_id = %s
             ORDER BY m.time DESC
         """
-        cursor.execute(sql, (user_name,))
+        
+        # 修改点 2：execute 时传入两个 user_name
+        # 第一个 user_name 对应 SQL 里的 m.receiver_id = %s
+        # 第二个 user_name 对应 SQL 里的 m.sender_id = %s
+        cursor.execute(sql, (user_name, user_name))
+        
         msgs = cursor.fetchall()
         
         for m in msgs:
             m['time'] = str(m['time'])
+            # 💡 小建议：给前端加一个标记，方便前端判断这是“我发的”还是“别人发的”
+            # 前端可以据此决定气泡是在左边（别人）还是右边（自己）
+            m['is_me'] = (m['sender_id'] == user_name)
             
         return jsonify({"messages": msgs}), 200
     except Exception as e:
