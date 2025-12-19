@@ -80,6 +80,24 @@
   "message": msg  // msg为服务器返回的信息
 }
 
+/api/user/<id>
+
+描述：获取用户id为<id>的信息
+类型：GET
+
+返回值
+{
+  "user_name": user_name, // 用户名
+  "nickname": nickname, // 用户昵称
+  "avatar_url": avatar_url, // 用户头像
+  "phone": phone, // 用户手机号
+  "intro": intro, // 用户简介
+  "created_at": created_at, // 用户创建时间
+  "message": msg  // msg为服务器返回的信息
+}
+
+
+
 /api/upload
 
 描述：上传文件

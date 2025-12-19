@@ -4,7 +4,8 @@ import request from '@/utils/request'
 // 用户相关
 export const login = (data) => request.post('/login', data)
 export const register = (data) => request.post('/register', data)
-export const getUserInfo = () => request.get('/user')
+export const getSelfInfo = () => request.get('/user')
+export const getUserInfo = (id) => request.get(`/user/${id}`)
 export const updateUserInfo = (data) => request.post('/update_user', data)
 export const uploadFile = (data) => request.post('/upload', data, {
   headers: { 'Content-Type': 'multipart/form-data' }

@@ -145,7 +145,7 @@ import { ref, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Star, ChatDotRound, Picture } from '@element-plus/icons-vue'
-import { getProductDetail, buyProduct, favoriteProduct, getComments, publishComment, getUserInfo } from '@/api/index'
+import { getProductDetail, buyProduct, favoriteProduct, getComments, publishComment, getSelfInfo } from '@/api/index'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
@@ -267,9 +267,8 @@ const handlePublishComment = async () => {
 // 联系卖家 (TODO)
 const handleContactSeller = () => {
   if (!userStore.token) return router.push('/login')
-  ElMessage.info('私信功能开发中，敬请期待！')
-  // 未来实现：跳转到消息页面并选中该卖家
-  // router.push({ path: '/messages', query: { targetId: product.value.seller_id }})
+  // 直接跳转到带 ID 的消息路径
+  router.push(`/messages/${product.value.seller_id}`)
 }
 
 const formatDate = (str) => {
