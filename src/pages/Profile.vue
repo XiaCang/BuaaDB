@@ -50,7 +50,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 import { ref, onMounted, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getUserInfo, updateUserInfo, uploadFile } from '@/api/index'
+import { getSelfInfo, updateUserInfo, uploadFile } from '@/api/index'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
@@ -67,7 +67,7 @@ const editForm = reactive({
 // 加载数据
 const loadData = async () => {
   try {
-    const res = await getUserInfo()
+    const res = await getSelfInfo()
     userInfo.value = res
     // 同步到编辑表单
     Object.assign(editForm, {

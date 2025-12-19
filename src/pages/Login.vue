@@ -72,7 +72,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Shop, User, Lock } from '@element-plus/icons-vue'
-import { login, register, getUserInfo } from '@/api/index'
+import { login, register, getSelfInfo } from '@/api/index'
 import { useUserStore } from '@/stores/user'
 import md5 from 'js-md5'
 
@@ -124,7 +124,7 @@ const handleLogin = async () => {
         if (token) {
           userStore.setToken(token)
           // 获取用户信息并存储
-          const info = await getUserInfo()
+          const info = await getSelfInfo()
           userStore.setUserInfo(info)
           
           ElMessage.success('登录成功！欢迎回来')
