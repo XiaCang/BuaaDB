@@ -39,11 +39,16 @@ const props = defineProps({
 const emit = defineEmits(['refresh'])
 
 const handleBuy = async () => {
-  try {
+  // 确认
+  ElMessageBox.confirm(
+    `确认以 ¥${props.item.price} 的价格购买此商品吗？`,
+    '购买确认',
+    { confirmButtonText: '确认支付', cancelButtonText: '取消', type: 'warning' }
+  ).then(async () => {
     await buyProduct(props.item.id)
     ElMessage.success('购买成功！')
     emit('refresh')
-  } catch (e) {}
+  })
 }
 
 const handleDelete = () => {
