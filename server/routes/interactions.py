@@ -170,6 +170,47 @@ def get_favorites():
         cursor.close()
         conn.close()
 
+# ====== 删除收藏 (Delete Favorite) ======
+@interaction_bp.route("/delete_favorite/<product_id>", methods=["DELETE"])
+def delete_favorite(product_id):
+    # 1. 验证 Token
+    token = request.headers.get("Authorization")
+    user_name = verify_token(token)
+    if not user_name:
+        return jsonify({"message": "未登录"}), 403
+
+    conn = get_db_connection()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    
+    try:
+        # 2. 先找到该用户的收藏夹 ID
+        cursor.execute("SELECT favorite_id FROM favorites WHERE user_id = %s", (user_name,))
+        fav_folder = cursor.fetchone()
+        
+        if not fav_folder:
+            return jsonify({"message": "操作失败：你还没有收藏夹"}), 404
+            
+        fav_id = fav_folder['favorite_id']
+
+        # 3. 执行删除操作
+        # 逻辑：从我的收藏夹(fav_id)里，把指定商品(product_id)移除
+        sql = "DELETE FROM favorite_item WHERE favorite_id = %s AND product_id = %s"
+        affected_rows = cursor.execute(sql, (fav_id, product_id))
+        conn.commit()
+        
+        if affected_rows == 0:
+            return jsonify({"message": "删除失败：收藏夹中未找到该商品"}), 404
+
+        return jsonify({"message": "已取消收藏"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        print(f"[ERROR] 取消收藏失败: {e}")
+        return jsonify({"message": "服务器错误"}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 # ==========================================
 # C. 消息系统 (Messages)
 # ==========================================
