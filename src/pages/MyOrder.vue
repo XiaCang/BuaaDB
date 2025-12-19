@@ -26,7 +26,7 @@
             <div class="order-body">
               <el-image 
                 class="prod-img" 
-                :src="order.image_url" 
+                :src="order.img_url" 
                 fit="cover"
               >
                 <template #error>
@@ -35,7 +35,7 @@
               </el-image>
 
               <div class="prod-info">
-                <h4 class="prod-name">{{ order.name || '商品名称加载中...' }}</h4>
+                <h4 class="prod-name">{{ order.product_title || '商品名称加载中...' }}</h4>
                 <p class="seller-id">卖家 ID: {{ order.seller_id }}</p>
               </div>
 
@@ -101,7 +101,7 @@ const fetchOrders = async () => {
 // 筛选逻辑
 const filteredOrders = computed(() => {
   if (statusFilter.value === 'all') return orders.value
-  return orders.value.filter(o => o.status === statusFilter.value)
+  return orders.value.filter(o => o.order_status === statusFilter.value)
 })
 
 // 状态展示逻辑

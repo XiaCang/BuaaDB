@@ -54,6 +54,12 @@ const router = createRouter({
       name: 'product',
       component: () => import('../pages/ProductDetail.vue'),
       meta: {requireAuth : true}
+    },
+    {
+      path: '/messages/:id',
+      name: 'messages',
+      component: () => import('../pages/Messages.vue'),
+      meta: {requireAuth : true}
     }
   ],
 })

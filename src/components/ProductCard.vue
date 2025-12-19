@@ -74,8 +74,12 @@ const handleFavor = async (item) => {
   border-radius: 12px;
   margin-bottom: 20px;
   border: none;  
-  cursor: pointer; /* 鼠标悬停变手型 */
-  transition: transform 0.2s;
+  cursor: pointer; /* 鼠标悬停变手型 */;
+}
+.p-card:hover {
+  transform: translateY(-5px); /* 悬停浮起效果 */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border : 1px solid #ff4d4f;
 }
 .product-card:hover {
   transform: translateY(-5px); /* 悬停浮起效果 */
