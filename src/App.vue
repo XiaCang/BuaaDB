@@ -1,7 +1,5 @@
 <script setup>
 
-// localStorage.setItem('token', '')
-
 </script>
 
 <template>

@@ -12,12 +12,13 @@
       <div class="footer">
         <template v-if="!isMine">
           <span class="seller">ID: {{ item.seller_id }}</span>
-          <el-button size="small" class="btn-buy" @click="handleBuy">购买</el-button>
+          <el-button size="small" class="btn-favor" @click.stop="handleFavor(item)">收藏</el-button>
+          <el-button size="small" class="btn-buy" @click.stop="handleBuy">购买</el-button>
         </template>
         
         <template v-else>
-          <el-button size="small" plain type="primary" @click="handleEdit">编辑</el-button>
-          <el-button size="small" plain type="danger" @click="handleDelete">删除</el-button>
+          <el-button size="small" class="btn-edit" plain type="primary" @click.stop="handleEdit">编辑</el-button>
+          <el-button size="small" class="btn-delete" plain type="danger" @click.stop="handleDelete">删除</el-button>
         </template>
       </div>
     </div>
@@ -26,8 +27,11 @@
 
 <script setup>
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { buyProduct, deleteProduct } from '@/api/index'
-
+import { buyProduct, deleteProduct, favoriteProduct } from '@/api/index'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
+const userStore = useUserStore()
+const router = useRouter()
 const props = defineProps({
   item: Object,
   isMine: Boolean // 是否为“我的商品”模式
@@ -51,8 +55,17 @@ const handleDelete = () => {
 }
 
 const handleEdit = () => {
-  // 跳转到修改页面，带上ID
   router.push(`/modify_product/${props.item.id}`)
+}
+
+const handleFavor = async (item) => {
+  if (!userStore.token) return router.push('/login')
+  try {
+    const res = await favoriteProduct(item.id)
+    ElMessage.success(res.message || '已加入收藏夹')
+  } catch (e) {
+    
+  }
 }
 </script>
 
@@ -60,8 +73,15 @@ const handleEdit = () => {
 .p-card {
   border-radius: 12px;
   margin-bottom: 20px;
-  border: none;
+  border: none;  
+  cursor: pointer; /* 鼠标悬停变手型 */
+  transition: transform 0.2s;
 }
+.product-card:hover {
+  transform: translateY(-5px); /* 悬停浮起效果 */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
 .img-box {
   height: 180px;
   position: relative;
@@ -87,5 +107,10 @@ const handleEdit = () => {
 .btn-buy {
   background-color: #ff6600; border: none; color: white; border-radius: 15px;
 }
+.btn-favor { border-color: #ff6600; color: #ff6600; border-radius: 15px; margin-left: 30%; }
 .btn-buy:hover { background-color: #ff8533; }
+
+.btn-edit { border-color: #ff6600; color: #ff6600; border-radius: 15px; }
+.btn-delete { border-color: #ff6600; color: #ff6600; border-radius: 15px; }
+
 </style>

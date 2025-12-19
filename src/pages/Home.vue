@@ -51,7 +51,7 @@
           <div class="product-grid" v-loading="loading">
             <el-row :gutter="20">
               <el-col v-for="item in filteredProducts" :key="item.id" :xs="12" :sm="8" :md="6" :lg="4.8">
-                <ProductCard :item="item" @refresh="fetchData" />
+                <ProductCard :item="item" @refresh="fetchData" @click="goToDetail(item.id)"/>
               </el-col>
             </el-row>
             <el-empty v-if="filteredProducts.length === 0" description="暂无商品" />
@@ -62,7 +62,7 @@
           <div class="product-grid" v-loading="loading">
             <el-row :gutter="20">
               <el-col v-for="item in myProducts" :key="item.id" :xs="12" :sm="8" :md="6" :lg="4.8">
-                <ProductCard :item="item" is-mine @refresh="fetchData" />
+                <ProductCard :item="item" is-mine @refresh="fetchData" @click="goToDetail(item.id)"/>
               </el-col>
             </el-row>
             <el-empty v-if="myProducts.length === 0" description="你还没有发布过商品哦" />
@@ -123,8 +123,13 @@ const handleCommand = (c) => {
 }
 
 const handleCreate = () => router.push({ name: 'create_product' })
-
+const goToDetail = (id) => {
+  // 跳转到详情页并携带 ID 参数
+  router.push(`/product/${id}`)
+}
 onMounted(fetchData)
+
+
 </script>
 
 <style scoped>

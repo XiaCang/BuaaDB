@@ -108,8 +108,11 @@ const handleLogin = async () => {
       loading.value = true
       try {
         // 加密密码
-        loginForm.password = md5(loginForm.password)
-        const res = await login(loginForm)
+        const data = {
+          username: loginForm.username,
+          password: md5(loginForm.password)
+        }
+        const res = await login(data)
 
         console.log('In handleLogin: res = ', res);
         
@@ -144,8 +147,11 @@ const handleRegister = async () => {
       loading.value = true
       try {
         // 加密密码
-        registerForm.password = md5(registerForm.password)
-        await register(registerForm)
+        const data = {
+          username: registerForm.username,
+          password: md5(registerForm.password)
+        }
+        await register(data)
         ElMessage.success('注册成功，请登录')
         activeName.value = 'login'
       } catch (error) {
