@@ -4,7 +4,7 @@
       <div class="nav-content">
         <div class="brand" @click="activeTab = 'all'">
           <el-icon :size="28" color="#ff6600"><Shop /></el-icon>
-          <span>校园二货</span>
+          <span>TradeHub</span>
         </div>
         
 

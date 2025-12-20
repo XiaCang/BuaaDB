@@ -66,11 +66,12 @@ const router = createRouter({
 
 
 router.beforeEach(async (to, from) => {
-  if (to.meta.requiresAuth && !auth.isAuthenticated()) {
+
+  if (to.meta.requireAuth && !auth.isAuthenticated()) {
     return { name: 'login' }
   } else if (to.meta.guestOnly && auth.isAuthenticated()) {
     return { name: 'home' }
-  } else {
+  } else {  
     return true
   }
 })

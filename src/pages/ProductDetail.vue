@@ -124,7 +124,22 @@
                 <div class="comment-right">
                 <div class="comment-meta">
                     <span class="comment-nickname">{{ comment.nickname || '匿名用户' }}</span>
-                    <span class="comment-time">{{ formatDate(comment.created_at) }}</span>
+                    
+                    <div>
+                      <span class="comment-time">{{ formatDate(comment.time) }}</span>
+                      <!-- 添加删除按钮 -->
+                      <el-button 
+                        v-if="comment.user_id === userStore.userInfo.user_name"
+                        type="danger" 
+                        link 
+                        size="small"
+                        style="margin-left: 10px;"
+                        @click="handleDeleteComment(comment.comment_id)"
+                      >
+                        删除
+                      </el-button>
+                    </div>
+
                 </div>
                 <div class="comment-content">
                     {{ comment.content }}
@@ -145,7 +160,7 @@ import { ref, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Star, ChatDotRound, Picture } from '@element-plus/icons-vue'
-import { getProductDetail, buyProduct, favoriteProduct, getComments, publishComment, getUserInfo } from '@/api/index'
+import { getProductDetail, buyProduct, favoriteProduct, getComments, publishComment, getUserInfo,deleteComment } from '@/api/index'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
@@ -279,6 +294,16 @@ const handleContactSeller = () => {
 const formatDate = (str) => {
   if(!str) return ''
   return new Date(str).toLocaleString()
+}
+
+const handleDeleteComment = async (commentId) => {
+  try {
+    await deleteComment(commentId)
+    ElMessage.success('删除成功')
+    // 重新加载评论列表
+    const commentRes = await getComments(product.value.id)
+    comments.value = commentRes.comments || []
+  } catch (e) {}
 }
 
 onMounted(initData)
