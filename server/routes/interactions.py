@@ -82,13 +82,51 @@ def get_comments(product_id):
         cursor.close()
         conn.close()
 
+# ====== 3. 删除评论 ======
+# API: DELETE /api/delete_comment/<comment_id>
+@interaction_bp.route("/delete_comment/<comment_id>", methods=["DELETE"])
+def delete_comment(comment_id):
+    token = request.headers.get("Authorization")
+    user_name = verify_token(token)
+    if not user_name:
+        return jsonify({"message": "未登录"}), 403
+
+    conn = get_db_connection()
+    cursor = conn.cursor(pymysql.cursors.DictCursor) # 使用字典游标
+    try:
+        # 1. 检查评论是否存在 & 验证归属权
+        # 只有 "评论的作者" 才能删除该评论
+        cursor.execute("SELECT user_id FROM comment WHERE comment_id = %s", (comment_id,))
+        comment = cursor.fetchone()
+
+        if not comment:
+            return jsonify({"message": "评论不存在"}), 404
+
+        if comment['user_id'] != user_name:
+            return jsonify({"message": "操作失败：您只能删除自己的评论"}), 403
+
+        # 2. 执行删除
+        cursor.execute("DELETE FROM comment WHERE comment_id = %s", (comment_id,))
+        conn.commit()
+
+        return jsonify({"message": "评论已删除"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        print(f"[ERROR] 删除评论失败: {e}")
+        return jsonify({"message": "服务器错误"}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 # ==========================================
 # B. 收藏系统 (Favorites)
 # 逻辑：先检查该用户有没有“收藏夹”，没有则创建，然后往夹子里加东西
 # ==========================================
-
-@interaction_bp.route("/favorite_product/<product_id>", methods=["POST"])
-def favorite_product(product_id):
+# ====== 1. 获取所有收藏夹 ======
+# API: GET /api/favorite_folders
+@interaction_bp.route("/favorite_folders", methods=["GET"])
+def get_favorite_folders():
     token = request.headers.get("Authorization")
     user_name = verify_token(token)
     if not user_name:
@@ -96,43 +134,174 @@ def favorite_product(product_id):
 
     conn = get_db_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
-    
     try:
-        # 1. 先找这个用户的 favorite_id (收藏夹ID)
-        cursor.execute("SELECT favorite_id FROM favorites WHERE user_id = %s", (user_name,))
-        fav_folder = cursor.fetchone()
+        # 查询该用户所有的收藏夹
+        sql = "SELECT favorite_id as id, name, create_time as created_at FROM favorites WHERE user_id = %s ORDER BY create_time DESC"
+        cursor.execute(sql, (user_name,))
+        folders = cursor.fetchall()
         
-        if not fav_folder:
-            # 如果是新用户，还没有收藏夹，帮他创建一个
-            fav_id = generate_uuid()
-            cursor.execute("INSERT INTO favorites (favorite_id, user_id, created_time) VALUES (%s, %s, NOW())", 
-                           (fav_id, user_name))
-        else:
-            fav_id = fav_folder['favorite_id']
+        # 转换时间格式
+        for f in folders:
+            f['created_at'] = str(f['created_at'])
 
-        # 2. 检查是否重复收藏
-        cursor.execute("SELECT * FROM favorite_item WHERE favorite_id = %s AND product_id = %s", (fav_id, product_id))
+        return jsonify({"folders": folders}), 200
+    except Exception as e:
+        print(f"[ERROR] 获取收藏夹失败: {e}")
+        return jsonify({"message": "服务器错误"}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# ====== 2. 创建收藏夹 ======
+# API: POST /api/create_favorite_folder
+@interaction_bp.route("/create_favorite_folder", methods=["POST"])
+def create_favorite_folder():
+    token = request.headers.get("Authorization")
+    user_name = verify_token(token)
+    if not user_name:
+        return jsonify({"message": "未登录"}), 403
+
+    data = request.json
+    folder_name = data.get("name")
+    
+    if not folder_name:
+        return jsonify({"message": "收藏夹名称不能为空"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        folder_id = generate_uuid()
+        # 插入新收藏夹
+        sql = "INSERT INTO favorites (favorite_id, user_id, name, create_time) VALUES (%s, %s, %s, NOW())"
+        cursor.execute(sql, (folder_id, user_name, folder_name))
+        conn.commit()
+        
+        return jsonify({"message": "收藏夹创建成功", "id": folder_id}), 201
+    except Exception as e:
+        conn.rollback()
+        print(f"[ERROR] 创建收藏夹失败: {e}")
+        return jsonify({"message": "服务器错误"}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# ====== 3. 修改收藏夹名称 ======
+# API: POST /api/modify_favorite_folder
+@interaction_bp.route("/modify_favorite_folder", methods=["POST"])
+def modify_favorite_folder():
+    token = request.headers.get("Authorization")
+    user_name = verify_token(token)
+    if not user_name:
+        return jsonify({"message": "未登录"}), 403
+
+    data = request.json
+    folder_id = data.get("id") # 注意：修改必须传 id
+    new_name = data.get("name")
+
+    if not folder_id or not new_name:
+        return jsonify({"message": "缺少参数"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # 确保只能修改自己的收藏夹
+        sql = "UPDATE favorites SET name = %s WHERE favorite_id = %s AND user_id = %s"
+        affected = cursor.execute(sql, (new_name, folder_id, user_name))
+        conn.commit()
+
+        if affected == 0:
+            return jsonify({"message": "修改失败：收藏夹不存在或无权限"}), 404
+            
+        return jsonify({"message": "修改成功"}), 200
+    except Exception as e:
+        conn.rollback()
+        print(f"[ERROR] 修改收藏夹失败: {e}")
+        return jsonify({"message": "服务器错误"}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# ====== 4. 删除收藏夹 ======
+# API: DELETE /api/delete_favorite_folder/<id>
+@interaction_bp.route("/delete_favorite_folder/<folder_id>", methods=["DELETE"])
+def delete_favorite_folder(folder_id):
+    token = request.headers.get("Authorization")
+    user_name = verify_token(token)
+    if not user_name:
+        return jsonify({"message": "未登录"}), 403
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # 1. 验证归属权
+        cursor.execute("SELECT * FROM favorites WHERE favorite_id = %s AND user_id = %s", (folder_id, user_name))
+        if not cursor.fetchone():
+            return jsonify({"message": "收藏夹不存在或无权限"}), 404
+
+        # 2. 级联删除：先删除该收藏夹里的所有商品项
+        cursor.execute("DELETE FROM favorite_item WHERE favorite_id = %s", (folder_id,))
+        
+        # 3. 再删除收藏夹本身
+        cursor.execute("DELETE FROM favorites WHERE favorite_id = %s", (folder_id,))
+        
+        conn.commit()
+        return jsonify({"message": "收藏夹已删除"}), 200
+    except Exception as e:
+        conn.rollback()
+        print(f"[ERROR] 删除收藏夹失败: {e}")
+        return jsonify({"message": "服务器错误"}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# ====== 5. 收藏商品到指定收藏夹 ======
+# API: POST /api/favorite_product
+@interaction_bp.route("/favorite_product", methods=["POST"])
+def add_favorite_product():
+    token = request.headers.get("Authorization")
+    user_name = verify_token(token)
+    if not user_name:
+        return jsonify({"message": "未登录"}), 403
+
+    data = request.json
+    product_id = data.get("product_id")
+    folder_id = data.get("folder_id")
+
+    if not product_id or not folder_id:
+        return jsonify({"message": "缺少参数"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # 1. 检查收藏夹是否属于该用户
+        cursor.execute("SELECT * FROM favorites WHERE favorite_id = %s AND user_id = %s", (folder_id, user_name))
+        if not cursor.fetchone():
+            return jsonify({"message": "收藏夹不存在"}), 404
+
+        # 2. 检查是否已经收藏过（避免重复）
+        cursor.execute("SELECT * FROM favorite_item WHERE favorite_id = %s AND product_id = %s", (folder_id, product_id))
         if cursor.fetchone():
-            return jsonify({"message": "您已收藏过该商品"}), 200 # 也可以返回 409
+            return jsonify({"message": "该商品已在此收藏夹中"}), 200 # 幂等处理
 
         # 3. 插入收藏项
         item_id = generate_uuid()
-        insert_sql = "INSERT INTO favorite_item (item_id, favorite_id, product_id) VALUES (%s, %s, %s)"
-        cursor.execute(insert_sql, (item_id, fav_id, product_id))
-        
+        sql = "INSERT INTO favorite_item (item_id, favorite_id, product_id, create_time) VALUES (%s, %s, %s, NOW())"
+        cursor.execute(sql, (item_id, folder_id, product_id))
         conn.commit()
-        return jsonify({"message": "收藏成功"}), 200
 
+        return jsonify({"message": "收藏成功"}), 201
     except Exception as e:
         conn.rollback()
-        print(f"[ERROR] 收藏失败: {e}")
+        print(f"[ERROR] 收藏商品失败: {e}")
         return jsonify({"message": "服务器错误"}), 500
     finally:
         cursor.close()
         conn.close()
 
-@interaction_bp.route("/get_favorites", methods=["GET"])
-def get_favorites():
+# ====== 6. 获取指定收藏夹内的商品 ======
+# API: GET /api/get_favorites/<id>
+@interaction_bp.route("/get_favorites/<folder_id>", methods=["GET"])
+def get_folder_items(folder_id):
     token = request.headers.get("Authorization")
     user_name = verify_token(token)
     if not user_name:
@@ -141,71 +310,65 @@ def get_favorites():
     conn = get_db_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
     try:
-        # 三表连接：favorites -> favorite_item -> products
+        # 1. 验证收藏夹权限
+        cursor.execute("SELECT * FROM favorites WHERE favorite_id = %s AND user_id = %s", (folder_id, user_name))
+        if not cursor.fetchone():
+            return jsonify({"message": "收藏夹不存在或无权限"}), 404
+
+        # 2. 查询商品详情 (关联 Products 表)
+        # 虽然你的文档只要求返回 product_id，但通常前端展示需要 title, price, img_url
+        # 这里我把详细信息也查出来给你，前端用不用取决于你
         sql = """
-            SELECT p.* FROM favorites f
-            JOIN favorite_item fi ON f.favorite_id = fi.favorite_id
+            SELECT fi.product_id, p.product_title as name, p.price, p.img_url, fi.create_time
+            FROM favorite_item fi
             JOIN products p ON fi.product_id = p.product_id
-            WHERE f.user_id = %s
+            WHERE fi.favorite_id = %s
+            ORDER BY fi.create_time DESC
         """
-        cursor.execute(sql, (user_name,))
+        cursor.execute(sql, (folder_id,))
         favorites = cursor.fetchall()
         
-        # 格式化数据
-        result = []
-        for p in favorites:
-            # 这里简单处理，如果需要 seller 信息可能还需要连 users 表
-            result.append({
-                "product_id": p['product_id'],
-                "name": p['product_title'],
-                "price": float(p['price']),
-                "image_url": p['img_url']
-            })
-            
-        return jsonify({"favorites": result}), 200
+        # 格式化时间
+        for f in favorites:
+            f['create_time'] = str(f['create_time'])
+
+        return jsonify({"favorites": favorites}), 200
     except Exception as e:
-        print(f"[ERROR] 获取收藏失败: {e}")
+        print(f"[ERROR] 获取收藏详情失败: {e}")
         return jsonify({"message": "服务器错误"}), 500
     finally:
         cursor.close()
         conn.close()
 
-# ====== 删除收藏 (Delete Favorite) ======
-@interaction_bp.route("/delete_favorite/<product_id>", methods=["DELETE"])
-def delete_favorite(product_id):
-    # 1. 验证 Token
+# ====== 7. 从指定收藏夹删除商品 ======
+# API: DELETE /api/delete_favorite/<folder_id>/product/<product_id>
+@interaction_bp.route("/delete_favorite/<folder_id>/product/<product_id>", methods=["DELETE"])
+def delete_favorite_item(folder_id, product_id):
     token = request.headers.get("Authorization")
     user_name = verify_token(token)
     if not user_name:
         return jsonify({"message": "未登录"}), 403
 
     conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-    
+    cursor = conn.cursor()
     try:
-        # 2. 先找到该用户的收藏夹 ID
-        cursor.execute("SELECT favorite_id FROM favorites WHERE user_id = %s", (user_name,))
-        fav_folder = cursor.fetchone()
-        
-        if not fav_folder:
-            return jsonify({"message": "操作失败：你还没有收藏夹"}), 404
-            
-        fav_id = fav_folder['favorite_id']
+        # 1. 验证收藏夹归属 (防止删除别人的收藏)
+        cursor.execute("SELECT * FROM favorites WHERE favorite_id = %s AND user_id = %s", (folder_id, user_name))
+        if not cursor.fetchone():
+            return jsonify({"message": "操作失败：无权操作此收藏夹"}), 403
 
-        # 3. 执行删除操作
-        # 逻辑：从我的收藏夹(fav_id)里，把指定商品(product_id)移除
+        # 2. 删除收藏项
         sql = "DELETE FROM favorite_item WHERE favorite_id = %s AND product_id = %s"
-        affected_rows = cursor.execute(sql, (fav_id, product_id))
+        affected = cursor.execute(sql, (folder_id, product_id))
         conn.commit()
-        
-        if affected_rows == 0:
-            return jsonify({"message": "删除失败：收藏夹中未找到该商品"}), 404
 
-        return jsonify({"message": "已取消收藏"}), 200
+        if affected == 0:
+            return jsonify({"message": "该商品不在收藏夹中"}), 404
 
+        return jsonify({"message": "已移除收藏"}), 200
     except Exception as e:
         conn.rollback()
-        print(f"[ERROR] 取消收藏失败: {e}")
+        print(f"[ERROR] 删除收藏项失败: {e}")
         return jsonify({"message": "服务器错误"}), 500
     finally:
         cursor.close()
