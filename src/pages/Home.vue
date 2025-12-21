@@ -115,12 +115,10 @@ const msgCount = ref(0)
 const categories = ref([])
 const categoryFilter = ref('')
 
-// 监听 tab 切换，重置筛选条件
+
 watch(() => activeTab.value, (newTab) => {
   if (newTab === 'all') {
-    // 保留全站市场的筛选条件
   } else {
-    // 切换到"我发布的"时清空筛选
     searchQuery.value = ''
     categoryFilter.value = ''
   }
@@ -135,8 +133,7 @@ const fetchData = async () => {
     
     const categoriesRes = await getCategories()
     categories.value = categoriesRes.categories || []
-    
-    // 添加"全部"选项到分类列表开头
+
     categories.value.unshift({ 
       category_id: '', 
       category_name: '全部类别' 
@@ -149,18 +146,16 @@ const fetchData = async () => {
   loading.value = false
 }
 
-// 过滤全站商品
+// 过滤商品
 const filteredProducts = computed(() => {
   return products.value.filter(p => {
-    // 过滤已删除商品
+
     if (p.status === 'deleted') return false
     
-    // 搜索关键词过滤
     const searchMatch = !searchQuery.value || 
       (p.name && p.name.includes(searchQuery.value)) ||
       (p.description && p.description.includes(searchQuery.value))
     
-    // 分类过滤
     const categoryMatch = !categoryFilter.value || 
       p.category_id === categoryFilter.value
     
@@ -168,7 +163,6 @@ const filteredProducts = computed(() => {
   })
 })
 
-// 过滤"我的商品"
 const myProducts = computed(() => {
   return products.value.filter(p => 
     p.seller_id === userStore.userInfo.user_name && 
@@ -193,7 +187,6 @@ onMounted(fetchData)
 
 <style scoped>
   
-/* 统一橙色主题变量 */
 :root {
   --market-orange: #ff6600;
   --market-orange-light: #ff9838;
@@ -206,7 +199,6 @@ onMounted(fetchData)
   min-height: 100vh;
 }
 
-/* 导航栏 */
 .navbar {
   background: #fff;
   height: 70px;
@@ -250,7 +242,6 @@ onMounted(fetchData)
   flex-direction: row;
 }
 
-/* 统一按钮样式 */
 .btn-orange {
   background: linear-gradient(90deg, #ff9838, #ff6600);
   border: none;
@@ -273,7 +264,6 @@ onMounted(fetchData)
 
 .icon-btn:hover { color: #ff6600; }
 
-/* 用户信息 */
 .user-profile {
   display: flex;
   align-items: center;
@@ -284,7 +274,6 @@ onMounted(fetchData)
 }
 .user-profile:hover { background: #fff5e6; }
 
-/* 选项卡样式 */
 .market-tabs {
   margin-top: 20px;
 }
@@ -301,14 +290,12 @@ onMounted(fetchData)
   background-color: transparent; 
 }
 
-/* 主容器 */
 .main-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px 40px;
 }
 
-/* 筛选区域样式 */
 .filter-container {
   display: flex;
   justify-content: space-between;
@@ -334,7 +321,6 @@ onMounted(fetchData)
   width: 300px;
 }
 
-/* 自定义搜索框样式 */
 :deep(.custom-search .el-input__wrapper),
 :deep(.filter-search .el-input__wrapper) {
   border-radius: 20px;
@@ -359,7 +345,6 @@ onMounted(fetchData)
   box-shadow: 0 0 0 1px var(--market-orange-light);
 }
 
-/* 状态文本 */
 .filter-status {
   display: flex;
   align-items: center;
@@ -371,7 +356,6 @@ onMounted(fetchData)
   font-weight: 500;
 }
 
-/* 商品网格 */
 .product-grid { 
   margin-top: 20px; 
 }

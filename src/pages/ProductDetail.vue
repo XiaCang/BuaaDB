@@ -152,15 +152,57 @@
         </div>
         </div>
     </el-card>
+
+    <!-- 收藏夹选择对话框 -->
+    <el-dialog
+      v-model="favorDialogVisible"
+      title="选择收藏夹"
+      width="400px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+    >
+      <el-form label-position="top" @submit.prevent>
+        <el-form-item label="请选择收藏夹">
+          <el-select 
+            v-model="selectedFolderId" 
+            placeholder="请选择收藏夹" 
+            style="width: 100%"
+            @click.stop
+            :loading="foldersLoading"
+          >
+            <el-option
+              v-for="folder in folders"
+              :key="folder.id"
+              :label="folder.name"
+              :value="folder.id"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="favorDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click.stop="confirmFavorite" :loading="favoriteLoading">确认收藏</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Star, ChatDotRound, Picture } from '@element-plus/icons-vue'
-import { getProductDetail, buyProduct, favoriteProduct, getComments, publishComment, getUserInfo,deleteComment } from '@/api/index'
+import { 
+  getProductDetail, 
+  buyProduct, 
+  getComments, 
+  publishComment, 
+  getUserInfo,
+  deleteComment,
+  favoriteProduct,
+  getFavoriteFolders
+} from '@/api/index'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
@@ -170,10 +212,17 @@ const userStore = useUserStore()
 const pageLoading = ref(true)
 const buyLoading = ref(false)
 const commentLoading = ref(false)
+const foldersLoading = ref(false)
+const favoriteLoading = ref(false)
 const product = ref({})
 const comments = ref([])
 const commentContent = ref('')
 const seller = ref({})
+
+// 收藏相关状态
+const favorDialogVisible = ref(false)
+const folders = ref([])
+const selectedFolderId = ref(null)
 
 const seller_avatar = ref('https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png')
 
@@ -198,26 +247,21 @@ const initData = async () => {
   
   pageLoading.value = true
   try {
-    // 并行请求商品详情和评论
+
     const [prodRes, commentRes] = await Promise.all([
       getProductDetail(productId),
       getComments(productId)
     ])
     product.value = prodRes
 
-    console.log("In ProductDetail : product = " , product.value);
-    // 请求卖家信息
+
     const sellerId = product.value.seller_id
     const sellerRes = await getUserInfo(sellerId)
-
-    console.log("In ProductDetail : seller = " , sellerRes);
     
     seller.value = sellerRes
     seller_avatar.value = sellerRes.avatar_url
 
-    comments.value = commentRes.comments || [];
-
-    console.log("In ProductDetail : comments = " , comments.value);
+    comments.value = commentRes.comments || []
   } catch (error) {
     console.error('加载失败', error)
     ElMessage.error('商品信息加载失败')
@@ -226,7 +270,7 @@ const initData = async () => {
   }
 }
 
-// 购买操作
+
 const handleBuy = () => {
   if (!userStore.token) {
      ElMessage.warning('请先登录')
@@ -242,23 +286,61 @@ const handleBuy = () => {
     try {
       const res = await buyProduct(product.value.id)
       ElMessage.success(res.message || '购买成功！')
-      initData() // 刷新状态
+      initData() 
     } finally {
       buyLoading.value = false
     }
   })
 }
 
-// 收藏操作
 const handleFavorite = async () => {
-  if (!userStore.token) return router.push('/login')
+  if (!userStore.token) {
+    ElMessage.warning('请先登录')
+    return router.push('/login')
+  }
+
   try {
-    const res = await favoriteProduct(product.value.id)
-    ElMessage.success(res.message || '已加入收藏夹')
-  } catch (e) {}
+    foldersLoading.value = true
+    const res = await getFavoriteFolders()
+    folders.value = res.folders || []
+    
+    if (folders.value.length === 0) {
+      ElMessage.warning('您还没有创建收藏夹，请先创建收藏夹')
+      return
+    }
+    
+    selectedFolderId.value = folders.value[0]?.id || null
+    favorDialogVisible.value = true
+  } catch (error) {
+    console.error('获取收藏夹失败', error)
+    ElMessage.error('获取收藏夹失败')
+  } finally {
+    foldersLoading.value = false
+  }
 }
 
-// 发布评论
+const confirmFavorite = async () => {
+  if (!selectedFolderId.value) {
+    ElMessage.warning('请选择一个收藏夹')
+    return
+  }
+
+  favoriteLoading.value = true
+  try {
+    await favoriteProduct({
+      product_id: product.value.id,
+      folder_id: selectedFolderId.value
+    })
+    ElMessage.success('收藏成功')
+    favorDialogVisible.value = false
+  } catch (error) {
+    console.error('收藏失败', error)
+    ElMessage.error('收藏失败')
+  } finally {
+    favoriteLoading.value = false
+  }
+}
+
 const handlePublishComment = async () => {
   if (!userStore.token) return router.push('/login')
   if (!commentContent.value.trim()) return ElMessage.warning('请输入评论内容')
@@ -270,8 +352,8 @@ const handlePublishComment = async () => {
       content: commentContent.value
     })
     ElMessage.success(res.message || '评论发布成功')
-    commentContent.value = '' // 清空输入框
-    // 重新加载评论列表
+    commentContent.value = ''
+
     const commentRes = await getComments(product.value.id)
     comments.value = commentRes.comments || []
   } finally {
@@ -279,31 +361,34 @@ const handlePublishComment = async () => {
   }
 }
 
-// 联系卖家 (TODO)
+
 const handleContactSeller = () => {
   if (!userStore.token) return router.push('/login')
-  // 直接跳转到带 ID 的消息路径
-  debugger
+  
   if (product.value.seller_id === userStore.userInfo.user_name) {
     ElMessage.warning('不能给自己发消息')
     return
   }
+  
   router.push(`/messages/${product.value.seller_id}`)
 }
 
-const formatDate = (str) => {
-  if(!str) return ''
-  return new Date(str).toLocaleString()
-}
 
 const handleDeleteComment = async (commentId) => {
   try {
     await deleteComment(commentId)
     ElMessage.success('删除成功')
-    // 重新加载评论列表
+
     const commentRes = await getComments(product.value.id)
     comments.value = commentRes.comments || []
-  } catch (e) {}
+  } catch (e) {
+    console.error('删除评论失败', e)
+  }
+}
+
+const formatDate = (str) => {
+  if(!str) return ''
+  return new Date(str).toLocaleString()
 }
 
 onMounted(initData)
@@ -320,7 +405,7 @@ onMounted(initData)
 .back-link { font-size: 15px; color: #666; }
 .back-link:hover { color: #ff6600; }
 
-/* 左侧样式 */
+
 .image-card {
   border-radius: 12px;
   overflow: hidden;
@@ -331,7 +416,7 @@ onMounted(initData)
 
 .image-wrapper {
   position: relative;
-  height: 450px; /* 固定高度，适配不同比例图片 */
+  height: 450px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -376,11 +461,11 @@ onMounted(initData)
 .seller-name { font-weight: bold; font-size: 16px; color: #333; }
 .seller-meta { font-size: 12px; color: #999; margin-top: 4px; }
 
-/* 右侧样式 */
+
 .info-card {
   border-radius: 12px;
   border: none;
-  height: 100%; /* 让它和左侧等高 */
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -412,8 +497,8 @@ onMounted(initData)
   color: #666;
   line-height: 1.8;
   font-size: 15px;
-  white-space: pre-wrap; /* 保留换行符 */
-  flex: 1; /* 占满剩余空间 */
+  white-space: pre-wrap;
+  flex: 1;
   margin-bottom: 30px;
 }
 
@@ -440,7 +525,7 @@ onMounted(initData)
   background-color: #fff5e6;
 }
 
-/* 评论区样式 */
+
 .comment-section {
   margin-top: 30px;
   border-radius: 12px;
@@ -456,39 +541,16 @@ onMounted(initData)
   margin-top: 10px;
 }
 
-
-.comment-item-card {
-  border: none;
-  background: #fcfcfc;
-}
-
-.comment-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-  font-size: 14px;
-}
-
-.comment-sender-id { color: #666; font-weight: 500; }
-
-.comment-content {
-  margin: 0;
-  color: #333;
-  line-height: 1.6;
-}
-
 .comment-list {
   padding: 20px 0;
 }
 
 .comment-item {
   display: flex;
-  gap: 16px; /* 头像和内容之间的间距 */
+  gap: 16px;
   padding: 10px 0;
 }
 
-/* 左侧头像固定宽度 */
 .comment-left {
   flex-shrink: 0;
 }
@@ -498,7 +560,6 @@ onMounted(initData)
   border: 1px solid #fff2e6;
 }
 
-/* 右侧内容自适应 */
 .comment-right {
   flex: 1;
   display: flex;
@@ -527,16 +588,14 @@ onMounted(initData)
   font-size: 14px;
   line-height: 1.6;
   color: #555;
-  word-break: break-all; /* 防止长文本撑破布局 */
+  word-break: break-all;
 }
 
-/* 分割线样式微调 */
 .comment-divider {
   margin: 15px 0;
   border-top-color: #e3e1e1;
 }
 
-/* 响应式调整：手机端头像稍微缩小 */
 @media (max-width: 480px) {
   .comment-item {
     gap: 12px;
@@ -546,7 +605,6 @@ onMounted(initData)
   }
 }
 
-/* 通用主题色类 */
 .btn-orange-gradient {
   background: linear-gradient(90deg, #ff9838, #ff6600);
   color: white;
@@ -562,7 +620,6 @@ onMounted(initData)
   background-color: #ff8533; border-color: #ff8533;
 }
 
-/* 响应式调整 */
 @media (max-width: 992px) {
   .image-wrapper { height: 350px; }
   .info-card { margin-top: 20px; height: auto; }

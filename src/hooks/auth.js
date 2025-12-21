@@ -1,8 +1,7 @@
 import {ref} from 'vue'
 
 export const auth = {
-    getToken() {
-    // 可以从 localStorage、Vuex、Pinia 或 Cookie 获取
+  getToken() {
     return localStorage.getItem('token')
   },
   

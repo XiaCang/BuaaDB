@@ -98,16 +98,15 @@ const route = useRoute()
 const productFormRef = ref(null)
 const pageLoading = ref(false) 
 const submitLoading = ref(false)
-const categoryList = ref([]) // 分类列表
+const categoryList = ref([])
 
-// 表单数据，增加 category_id
 const productForm = reactive({
   id: '', 
   name: '',
   price: 0,
   image_url: '',
   description: '',
-  category_id: '' // 默认为空
+  category_id: '' 
 })
 
 const rules = {
@@ -117,7 +116,6 @@ const rules = {
   description: [{ required: true, message: '详细描述不能为空', trigger: 'blur' }]
 }
 
-// 获取分类列表
 const fetchCategories = async () => {
   try {
     const res = await getCategories()
@@ -127,7 +125,6 @@ const fetchCategories = async () => {
   }
 }
 
-// 页面加载：获取旧数据并回填
 const initData = async () => {
   const productId = route.params.id 
   if (!productId) {
@@ -137,17 +134,15 @@ const initData = async () => {
 
   pageLoading.value = true
   try {
-    // 并行获取分类和商品详情
     await fetchCategories()
     const res = await getProductDetail(productId)
     
-    // 将获取到的详情填入表单
     productForm.id = res.id
     productForm.name = res.name
     productForm.price = res.price
     productForm.image_url = res.image_url
     productForm.description = res.description
-    // 回填分类ID（如果后端返回了该字段）
+
     productForm.category_id = res.category_id || '' 
   } catch (error) {
     console.error('初始化数据失败', error)
@@ -156,7 +151,6 @@ const initData = async () => {
   }
 }
 
-// 处理图片更换
 const handleImageUpload = async (options) => {
   const formData = new FormData()
   formData.append('file', options.file)
@@ -170,7 +164,6 @@ const handleImageUpload = async (options) => {
   } catch (error) {}
 }
 
-// 提交修改
 const submitForm = async () => {
   if (!productFormRef.value) return
   await productFormRef.value.validate(async (valid) => {

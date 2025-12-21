@@ -87,7 +87,6 @@ const folders = ref([])
 const activeFolderId = ref(null)
 const favoriteList = ref([])
 
-// 1. 获取所有收藏夹
 const fetchFolders = async () => {
   try {
     const res = await getFavoriteFolders()
@@ -101,7 +100,6 @@ const fetchFolders = async () => {
   }
 }
 
-// 2. 获取指定收藏夹内的商品详情
 const fetchFavorites = async (folderId) => {
   if (!folderId) return
   loading.value = true
@@ -109,7 +107,6 @@ const fetchFavorites = async (folderId) => {
     const res = await getFavorites(folderId)
     const favIds = res.favorites || []
     
-    // 串行或并行获取商品详情（取决于后端是否支持批量接口，这里保持原有逻辑）
     const details = await Promise.all(
       favIds.map(item => getProductDetail(item.product_id))
     )
@@ -148,7 +145,7 @@ const handleRenameFolder = (folder) => {
     inputPattern: /\S+/,
     inputErrorMessage: '名称不能为空'
   }).then(async ({ value }) => {
-    await modifyFavoriteFolder({ id: folder.id, name: value }) // 注意：API描述中修改可能需要ID
+    await modifyFavoriteFolder({ id: folder.id, name: value }) 
     ElMessage.success('修改成功')
     fetchFolders()
   })
@@ -166,8 +163,6 @@ const handleDeleteFolder = (folderId) => {
     fetchFolders()
   })
 }
-
-// --- 收藏商品管理逻辑 ---
 
 const handleRemoveProduct = (productId) => {
   ElMessageBox.confirm('确定要移除该商品吗？', '提示').then(async () => {

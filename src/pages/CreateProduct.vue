@@ -75,14 +75,14 @@ import { createProduct, uploadFile, getCategories } from '@/api/index'
 const router = useRouter()
 const productFormRef = ref(null)
 const loading = ref(false)
-const categoryList = ref([]) // 存储分类列表
+const categoryList = ref([])
 
 const productForm = reactive({
   name: '',
   price: 0,
   image_url: '',
   description: '',
-  category_id: '' // 默认为空字符串
+  category_id: '' 
 })
 
 const rules = {
@@ -90,14 +90,12 @@ const rules = {
   price: [{ required: true, message: '请输入价格', trigger: 'blur' }],
   image_url: [{ required: true, message: '请上传商品图片', trigger: 'change' }],
   description: [{ required: true, message: '请输入商品描述', trigger: 'blur' }]
-  // category_id 通常非必填，若必填可在此添加规则
 }
 
 // 初始化获取分类
 const fetchCategories = async () => {
   try {
     const res = await getCategories()
-    // 注意：根据你之前的 API 定义，返回结构是 res.categories = [{id, name}]
     console.log(res);
     
     categoryList.value = res.categories || []
@@ -145,7 +143,7 @@ onMounted(fetchCategories)
 </script>
 
 <style scoped>
-/* 样式部分保持你之前的设置即可 */
+
 .create-container {
   padding: 30px 20px;
   background-color: #f8f9fa;
@@ -153,13 +151,29 @@ onMounted(fetchCategories)
   display: flex;
   justify-content: center;
 }
-.form-card { width: 100%; max-width: 700px; border-radius: 12px; border: none; }
-.card-header-wrapper { display: flex; align-items: center; justify-content: space-between; }
-.back-btn { font-size: 16px; color: #666; }
-.back-btn:hover { color: #ff6600; }
-.title { font-size: 18px; font-weight: bold; }
+.form-card { 
+  width: 100%; 
+  max-width: 700px; 
+  border-radius: 12px; 
+  border: none; 
+}
+.card-header-wrapper { 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+}
+.back-btn { 
+  font-size: 16px; 
+  color: #666; 
+}
+.back-btn:hover { 
+  color: #ff6600;
+}
+.title { 
+  font-size: 18px; 
+  font-weight: bold; 
+}
 
-/* 上传框样式 */
 .upload-container :deep(.el-upload) {
   border: 2px dashed #e0e0e0;
   border-radius: 8px;
@@ -171,9 +185,22 @@ onMounted(fetchCategories)
   transition: border-color 0.3s;
   background-color: #fafafa;
 }
-.upload-container:hover :deep(.el-upload) { border-color: #ff6600; }
-.image-preview-box { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
-.uploaded-img { width: 100%; height: 100%; object-fit: contain; }
+.upload-container:hover :deep(.el-upload) { 
+  border-color: #ff6600; 
+}
+.image-preview-box { 
+  width: 100%; 
+  height: 100%; 
+  display: flex; 
+  justify-content: center; 
+  align-items: center;
+ }
+
+.uploaded-img { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: contain; 
+}
 .upload-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; }
 .uploader-icon { font-size: 32px; color: #999; }
 .upload-tip { font-size: 12px; color: #999; margin-top: 8px; }
