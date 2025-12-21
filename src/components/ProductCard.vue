@@ -92,13 +92,11 @@ const props = defineProps({
 })
 const emit = defineEmits(['refresh'])
 
-/* ===== 收藏相关状态 ===== */
 const favorDialogVisible = ref(false)
 const folders = ref([])
 const selectedFolderId = ref(null)
 const currentProductId = ref(null)
 
-/* ===== 购买 ===== */
 const handleBuy = async () => {
   ElMessageBox.confirm(
     `确认以 ¥${props.item.price} 的价格购买此商品吗？`,
@@ -111,7 +109,6 @@ const handleBuy = async () => {
   })
 }
 
-/* ===== 删除 ===== */
 const handleDelete = () => {
   ElMessageBox.confirm('确定要删除这件商品吗？', '警告', { type: 'error' })
     .then(async () => {
@@ -121,12 +118,10 @@ const handleDelete = () => {
     })
 }
 
-/* ===== 编辑 ===== */
 const handleEdit = () => {
   router.push(`/modify_product/${props.item.id}`)
 }
 
-/* ===== 点击收藏 ===== */
 const handleFavor = async (item) => {
   if (!userStore.token) {
     router.push('/login')
@@ -142,7 +137,6 @@ const handleFavor = async (item) => {
   favorDialogVisible.value = true
 }
 
-/* ===== 确认收藏 ===== */
 const confirmFavor = async () => {
   if (!selectedFolderId.value) {
     ElMessage.warning('请选择一个收藏夹')

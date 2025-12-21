@@ -9,7 +9,6 @@ const appReady = ref(false)
 
 onMounted(async () => {
   try {
-    // 初始化用户信息（如果有token）
       if (auth.getToken()) {
         const info = await getSelfInfo()
         userStore.setUserInfo(info)

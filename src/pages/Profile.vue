@@ -18,7 +18,7 @@
           </div>
           <h2 class="nickname-display">{{ userInfo.nickname || '未设置' }}</h2>
           <el-tag type="warning" effect="dark" round>普通用户</el-tag>
-          <!-- 注册时间 -->
+
           <p class="register-time">注册时间: {{ userInfo.create_time }}</p>
         </div>
 
@@ -47,7 +47,7 @@
 </template>
 
 <script setup>
-import { ArrowLeft, Camera } from '@element-plus/icons-vue' // 引入图标
+import { ArrowLeft, Camera } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 const router = useRouter()
 import { ref, onMounted, reactive } from 'vue'
@@ -66,14 +66,13 @@ const editForm = reactive({
   avatar_url: ''
 })
 
-// 加载数据
+
 const loadData = async () => {
   try {
     const res = await getSelfInfo()
     userInfo.value = res
     console.log("In Profile : userInfo = " , userInfo.value);
-    
-    // 同步到编辑表单
+
     Object.assign(editForm, {
       nickname: res.nickname,
       phone: res.phone,
@@ -84,7 +83,7 @@ const loadData = async () => {
   } catch (err) {}
 }
 
-// 更换头像
+
 const handleAvatarUpdate = async (options) => {
   const formData = new FormData()
   formData.append('file', options.file)
@@ -93,18 +92,18 @@ const handleAvatarUpdate = async (options) => {
   try {
     const res = await uploadFile(formData)
     editForm.avatar_url = res.url
-    await saveProfile() // 上传后自动保存一次
+    await saveProfile()
     ElMessage.success('头像已更新')
   } catch (err) {}
 }
 
-// 保存资料
+
 const saveProfile = async () => {
   saving.value = true
   try {
     const res = await updateUserInfo(editForm)
     ElMessage.success(res.message || '资料更新成功')
-    await loadData() // 刷新显示
+    await loadData() 
   } finally {
     saving.value = false
   }
@@ -134,7 +133,7 @@ onMounted(loadData)
 
 .profile-container {
   max-width: 900px;
-  margin: 20px auto; /* 缩小顶部边距 */
+  margin: 20px auto; 
   padding: 0 20px;
 }
 

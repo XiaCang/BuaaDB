@@ -247,14 +247,14 @@ const initData = async () => {
   
   pageLoading.value = true
   try {
-    // 并行请求商品详情和评论
+
     const [prodRes, commentRes] = await Promise.all([
       getProductDetail(productId),
       getComments(productId)
     ])
     product.value = prodRes
 
-    // 请求卖家信息
+
     const sellerId = product.value.seller_id
     const sellerRes = await getUserInfo(sellerId)
     
@@ -270,7 +270,7 @@ const initData = async () => {
   }
 }
 
-// 购买操作
+
 const handleBuy = () => {
   if (!userStore.token) {
      ElMessage.warning('请先登录')
@@ -286,14 +286,13 @@ const handleBuy = () => {
     try {
       const res = await buyProduct(product.value.id)
       ElMessage.success(res.message || '购买成功！')
-      initData() // 刷新状态
+      initData() 
     } finally {
       buyLoading.value = false
     }
   })
 }
 
-// 收藏操作 - 打开收藏夹选择对话框
 const handleFavorite = async () => {
   if (!userStore.token) {
     ElMessage.warning('请先登录')
@@ -307,11 +306,9 @@ const handleFavorite = async () => {
     
     if (folders.value.length === 0) {
       ElMessage.warning('您还没有创建收藏夹，请先创建收藏夹')
-      // 这里可以跳转到收藏夹管理页面或提示创建
       return
     }
     
-    // 默认选择第一个收藏夹
     selectedFolderId.value = folders.value[0]?.id || null
     favorDialogVisible.value = true
   } catch (error) {
@@ -322,7 +319,6 @@ const handleFavorite = async () => {
   }
 }
 
-// 确认收藏
 const confirmFavorite = async () => {
   if (!selectedFolderId.value) {
     ElMessage.warning('请选择一个收藏夹')
@@ -345,7 +341,6 @@ const confirmFavorite = async () => {
   }
 }
 
-// 发布评论
 const handlePublishComment = async () => {
   if (!userStore.token) return router.push('/login')
   if (!commentContent.value.trim()) return ElMessage.warning('请输入评论内容')
@@ -357,8 +352,8 @@ const handlePublishComment = async () => {
       content: commentContent.value
     })
     ElMessage.success(res.message || '评论发布成功')
-    commentContent.value = '' // 清空输入框
-    // 重新加载评论列表
+    commentContent.value = ''
+
     const commentRes = await getComments(product.value.id)
     comments.value = commentRes.comments || []
   } finally {
@@ -366,7 +361,7 @@ const handlePublishComment = async () => {
   }
 }
 
-// 联系卖家
+
 const handleContactSeller = () => {
   if (!userStore.token) return router.push('/login')
   
@@ -378,12 +373,12 @@ const handleContactSeller = () => {
   router.push(`/messages/${product.value.seller_id}`)
 }
 
-// 删除评论
+
 const handleDeleteComment = async (commentId) => {
   try {
     await deleteComment(commentId)
     ElMessage.success('删除成功')
-    // 重新加载评论列表
+
     const commentRes = await getComments(product.value.id)
     comments.value = commentRes.comments || []
   } catch (e) {
@@ -410,7 +405,7 @@ onMounted(initData)
 .back-link { font-size: 15px; color: #666; }
 .back-link:hover { color: #ff6600; }
 
-/* 左侧样式 */
+
 .image-card {
   border-radius: 12px;
   overflow: hidden;
@@ -466,7 +461,7 @@ onMounted(initData)
 .seller-name { font-weight: bold; font-size: 16px; color: #333; }
 .seller-meta { font-size: 12px; color: #999; margin-top: 4px; }
 
-/* 右侧样式 */
+
 .info-card {
   border-radius: 12px;
   border: none;
@@ -530,7 +525,7 @@ onMounted(initData)
   background-color: #fff5e6;
 }
 
-/* 评论区样式 */
+
 .comment-section {
   margin-top: 30px;
   border-radius: 12px;
@@ -601,7 +596,6 @@ onMounted(initData)
   border-top-color: #e3e1e1;
 }
 
-/* 响应式调整 */
 @media (max-width: 480px) {
   .comment-item {
     gap: 12px;

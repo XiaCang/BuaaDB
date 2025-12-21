@@ -18,11 +18,9 @@
     </el-header>
     
     <el-container class="main-container">
-      <!-- 左侧联系人列表 -->
       <el-aside width="300px" class="contact-aside">
         <el-card class="contact-card" :body-style="{ padding: '0px' }">
           <div class="list-header">
-            <!-- 返回 -->
             <span>
               <el-button link @click="router.push(`/`)" class="back-btn">
             <el-icon><ArrowLeft /></el-icon> 
@@ -70,7 +68,6 @@
         </el-card>
       </el-aside>
 
-      <!-- 右侧聊天窗口 -->
       <el-main class="chat-main">
         <el-card class="chat-card" :body-style="{ display: 'flex', flexDirection: 'column', height: '100%' }">
           <template v-if="currentTargetId">
@@ -89,7 +86,6 @@
 
             </div>
 
-            <!-- 消息显示区域 -->
             <div class="msg-display-wrapper">
               <el-scrollbar 
                 ref="msgScroll" 
@@ -136,7 +132,6 @@
               </el-scrollbar>
             </div>
 
-            <!-- 输入区域 -->
             <div class="input-area">
               <el-input
                 v-model="inputMsg"
@@ -207,8 +202,6 @@ import { useRoute, useRouter } from 'vue-router'
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
-
-// 状态管理
 const rawMessages = ref([])
 const inputMsg = ref('')
 const sending = ref(false)
@@ -219,38 +212,34 @@ const page = ref(1)
 const pageSize = 20
 const hasMore = ref(true)
 
-// 当前聊天对象ID（从路由参数获取）
 const currentTargetId = computed(() => route.params.id || null)
 
-// 处理后的联系人列表 - 修复显示自己信息的问题
+
 const processedContactList = computed(() => {
   const contacts = {}
   const myId = userStore.userInfo.user_name
   
   rawMessages.value.forEach(msg => {
-    // 确定对方ID：如果是我发送的消息，对方是接收者；如果是对方发送的消息，对方是发送者
+    
     const isMyMessage = msg.sender_id === myId
     const otherId = isMyMessage ? msg.receiver_id : msg.sender_id
-    
-    // 如果对方ID不存在，跳过
+
     if (!otherId || otherId === myId) return
     
     if (!contacts[otherId]) {
-      // 如果是对方发送的消息，使用对方的昵称和头像
-      // 如果是我发送的消息，暂时没有对方信息，只存储ID
+
       const contactInfo = {
         userId: otherId,
         displayName: isMyMessage ? null : (msg.sender_nickname || `用户 ${otherId}`),
         avatar: isMyMessage ? null : msg.sender_avatar,
         lastMsg: msg.content,
         lastTime: msg.time,
-        unreadCount: !isMyMessage ? 1 : 0, // 对方发送的消息才计为未读
+        unreadCount: !isMyMessage ? 1 : 0,
         lastMessageId: msg.message_id
       }
       
       contacts[otherId] = contactInfo
     } else {
-      // 更新现有联系人信息
       const currentTime = new Date(msg.time)
       const lastTime = new Date(contacts[otherId].lastTime)
       
@@ -260,32 +249,31 @@ const processedContactList = computed(() => {
         contacts[otherId].lastMessageId = msg.message_id
       }
       
-      // 如果是对方发来的消息，增加未读数
+
       if (!isMyMessage) {
         contacts[otherId].unreadCount = (contacts[otherId].unreadCount || 0) + 1
       }
       
-      // 如果之前没有对方信息，现在有了（比如对方回复了消息），则更新昵称和头像
+
       if (!isMyMessage && (!contacts[otherId].displayName || !contacts[otherId].avatar)) {
         contacts[otherId].displayName = msg.sender_nickname || `用户 ${otherId}`
         contacts[otherId].avatar = msg.sender_avatar
       }
     }
   })
-  
-  // 转换为数组并按时间排序
+
   return Object.values(contacts).sort((a, b) => 
     new Date(b.lastTime) - new Date(a.lastTime)
   )
 })
 
-// 当前联系人信息
+
 const currentContactInfo = computed(() => {
   if (!currentTargetId.value) return null
   return processedContactList.value.find(c => c.userId === currentTargetId.value)
 })
 
-// 当前聊天历史
+
 const currentChatHistory = computed(() => {
   if (!currentTargetId.value) return []
   
@@ -298,7 +286,7 @@ const currentChatHistory = computed(() => {
     .sort((a, b) => new Date(a.time) - new Date(b.time))
 })
 
-// 工具函数
+
 const isMyMessage = (msg) => {
   return msg.sender_id === userStore.userInfo.user_name
 }
@@ -307,22 +295,22 @@ const isSystemMessage = (msg) => {
   return msg.sender_id === 'system'
 }
 
-// 选择联系人
+
 const selectContact = (userId) => {
-  // 如果已经是当前联系人，不重复跳转
+
   if (currentTargetId.value === userId) return
   
-  // 清除该联系人的未读消息计数
+
   const contact = processedContactList.value.find(c => c.userId === userId)
   if (contact) {
     contact.unreadCount = 0
   }
   
-  // 跳转到该联系人的聊天页面
+
   router.push(`/messages/${userId}`)
 }
 
-// 发送消息
+
 const handleSend = async () => {
   const message = inputMsg.value.trim()
   if (!message || sending.value || !currentTargetId.value) return
@@ -330,7 +318,7 @@ const handleSend = async () => {
   sending.value = true
   
   try {
-    // 先添加临时消息到列表
+
     const tempMsg = {
       message_id: `temp_${Date.now()}`,
       sender_id: userStore.userInfo.user_name,
@@ -345,24 +333,23 @@ const handleSend = async () => {
     rawMessages.value.push(tempMsg)
     inputMsg.value = ''
     scrollToBottom()
-    
-    // 发送到服务器
+
     await sendMsg({
       receiver_id: currentTargetId.value,
       content: message
     })
     
-    // 更新消息状态
+
     const index = rawMessages.value.findIndex(m => m.message_id === tempMsg.message_id)
     if (index !== -1) {
       rawMessages.value[index].status = 'success'
     }
     
-    // 重新获取消息列表
+
     await fetchMsgs()
     
   } catch (error) {
-    // 标记发送失败
+
     const index = rawMessages.value.findIndex(m => m.message_id?.startsWith('temp_'))
     if (index !== -1) {
       rawMessages.value[index].status = 'failed'
@@ -374,7 +361,7 @@ const handleSend = async () => {
   }
 }
 
-// 滚动处理
+
 const handleScroll = ({ scrollTop }) => {
   if (scrollTop <= 100 && hasMore.value && !loadingHistory.value) {
     loadMoreHistory()
@@ -392,33 +379,11 @@ const scrollToBottom = () => {
   })
 }
 
-// 加载更多历史消息
+
 const loadMoreHistory = async () => {
-  if (!currentTargetId.value || !hasMore.value || loadingHistory.value) return
   
-  loadingHistory.value = true
-  try {
-    // TODO: 实现分页加载历史消息的API
-    // const res = await getHistoryMessages({
-    //   target_id: currentTargetId.value,
-    //   page: page.value + 1,
-    //   pageSize
-    // })
-    
-    // if (res.messages && res.messages.length > 0) {
-    //   rawMessages.value = [...res.messages, ...rawMessages.value]
-    //   page.value++
-    // }
-    
-    // hasMore.value = res.hasMore
-  } catch (error) {
-    console.error('加载历史消息失败:', error)
-  } finally {
-    loadingHistory.value = false
-  }
 }
 
-// 时间格式化
 const formatTimeShort = (time) => {
   if (!time) return ''
   const date = new Date(time)
@@ -443,13 +408,11 @@ const formatTimeFull = (time) => {
   return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
 }
 
-// 获取消息列表
 const fetchMsgs = async () => {
   try {
     const res = await getMsgs()
     rawMessages.value = res.messages || []
-    
-    // 如果当前有聊天对象，滚动到底部
+
     if (currentTargetId.value) {
       scrollToBottom()
     }
@@ -459,30 +422,27 @@ const fetchMsgs = async () => {
   }
 }
 
-// WebSocket 或定时刷新（可选）
+
 let refreshInterval = null
 
-// 监听路由变化
 watch(() => route.params.id, (newId) => {
   if (newId) {
-    // 清除该联系人的未读消息计数
     const contact = processedContactList.value.find(c => c.userId === newId)
     if (contact) {
       contact.unreadCount = 0
     }
     
-    // 滚动到底部
+
     nextTick(() => {
       scrollToBottom()
     })
   }
 })
 
-// 组件生命周期
 onMounted(() => {
   fetchMsgs()
   
-  // 定时刷新消息（每30秒）
+  // 定时刷新
   refreshInterval = setInterval(fetchMsgs, 3000)
 })
 

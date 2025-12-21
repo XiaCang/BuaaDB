@@ -80,7 +80,6 @@ const loading = ref(false)
 const orders = ref([])
 const statusFilter = ref('all')
 
-// 获取数据
 const fetchOrders = async () => {
   loading.value = true
   try {
@@ -96,13 +95,11 @@ const fetchOrders = async () => {
   }
 }
 
-// 筛选逻辑
 const filteredOrders = computed(() => {
   if (statusFilter.value === 'all') return orders.value
   return orders.value.filter(o => o.order_status === statusFilter.value)
 })
 
-// 状态展示逻辑
 const getStatusText = (status) => {
   const map = { active: '进行中', completed: '已完成', cancelled: '已取消' }
   return map[status] || '已完成'
@@ -147,7 +144,7 @@ onMounted(fetchOrders)
   border: none;
 }
 
-/* 订单行样式 */
+
 .order-row {
   border: 1px solid #f0f0f0;
   border-radius: 8px;
@@ -200,7 +197,6 @@ onMounted(fetchOrders)
   margin: 0 0 8px;
   font-size: 16px;
   color: #333;
-  /* 文本截断 */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -232,11 +228,9 @@ onMounted(fetchOrders)
   align-items: center;
 }
 
-/* 选项卡颜色覆盖 */
 :deep(.el-tabs__item.is-active) { color: #ff6600; }
 :deep(.el-tabs__active-bar) { background-color: #ff6600; }
 
-/* 响应式适配 */
 @media (max-width: 768px) {
   .order-price, .order-status {
     border: none;

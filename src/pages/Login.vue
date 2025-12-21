@@ -100,7 +100,7 @@ const rules = {
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }, { min: 6, message: '密码不能少于6位', trigger: 'blur' }]
 }
 
-// 登录逻辑
+// 登录
 const handleLogin = async () => {
   if (!loginFormRef.value) return
   await loginFormRef.value.validate(async (valid) => {
@@ -116,19 +116,16 @@ const handleLogin = async () => {
 
         console.log('In handleLogin: res = ', res);
         
-
-        // 假设后端返回的数据结构中包含 token，例如 res.token 或 res.data.token
-        // 这里根据你提供的 request.js 直接返回了 res
         const token = res.token || res.data?.token
         
         if (token) {
           userStore.setToken(token)
-          // 获取用户信息并存储
+
           const info = await getSelfInfo()
           userStore.setUserInfo(info)
           
           ElMessage.success('登录成功！欢迎回来')
-          router.push('/') // 跳转到首页
+          router.push('/') 
         }
       } catch (error) {
         console.error(error)
@@ -139,7 +136,7 @@ const handleLogin = async () => {
   })
 }
 
-// 注册逻辑
+// 注册
 const handleRegister = async () => {
   if (!registerFormRef.value) return
   await registerFormRef.value.validate(async (valid) => {
@@ -165,7 +162,7 @@ const handleRegister = async () => {
 </script>
 
 <style scoped>
-/* 主容器：渐变背景 */
+
 .login-container {
   height: 100vh;
   display: flex;
@@ -176,7 +173,7 @@ const handleRegister = async () => {
   overflow: hidden;
 }
 
-/* 装饰性元素 */
+
 .decoration {
   position: absolute;
   border-radius: 50%;
@@ -187,7 +184,7 @@ const handleRegister = async () => {
 .circle-1 { width: 400px; height: 400px; top: -100px; left: -100px; }
 .circle-2 { width: 300px; height: 300px; bottom: -50px; right: -50px; }
 
-/* 卡片样式 */
+
 .login-card {
   width: 420px;
   border-radius: 16px;
@@ -252,7 +249,7 @@ const handleRegister = async () => {
   color: #bbb;
 }
 
-/* 覆盖 Element Plus 输入框焦点颜色 */
+
 :deep(.el-input__wrapper.is-focus) {
   box-shadow: 0 0 0 1px #ff6600 inset !important;
 }
