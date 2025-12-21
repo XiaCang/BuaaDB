@@ -292,7 +292,6 @@
     {
       "id": id, // 收藏夹id
       "name": name, // 收藏夹名称
-      "is_default": is_default // 是否为默认收藏夹
       "created_at": created_at // 收藏夹创建时间
     }
   ]
