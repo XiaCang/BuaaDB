@@ -6,11 +6,10 @@ import uuid
 
 order_bp = Blueprint('order', __name__)
 
-# 辅助函数
 def generate_uuid():
     return uuid.uuid4().hex
 
-# ====== 1. 购买商品 (核心事务功能) ======
+# 购买商品
 @order_bp.route("/buy_product/<product_id>", methods=["POST"])
 def buy_product(product_id):
     # 补全 Token 验证代码
@@ -62,7 +61,7 @@ def buy_product(product_id):
         cursor.close()
         conn.close()
 
-# ====== 2. 获取我的订单 ======
+# 获取订单列表
 @order_bp.route("/get_orders", methods=["GET"])
 def get_orders():
     token = request.headers.get("Authorization")
@@ -74,7 +73,6 @@ def get_orders():
     cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     try:
-        # ✅ 修改点：在 SELECT 中增加了 o.product_id
         sql = """
             SELECT o.order_id, o.order_status, o.created_time,
                    o.product_id, 

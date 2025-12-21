@@ -2,7 +2,6 @@ import hashlib
 import secrets
 import time
 
-# 全局 Token 存储 (目前用内存 Map，以后可换 Redis)
 token_store = {}
 TOKEN_EXPIRE_SECONDS = 24 * 3600
 

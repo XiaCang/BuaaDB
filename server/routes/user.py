@@ -5,10 +5,9 @@ import pymysql
 
 user_bp = Blueprint('user', __name__)
 
-# ====== 获取用户信息 ======
+# 获取当前登录用户信息
 @user_bp.route("/user", methods=["GET"])
 def get_user_info():
-    # 1. 获取并验证 Token
     token = request.headers.get("Authorization")
     if not token:
         return jsonify({"message": "未登录，缺少 token"}), 401
@@ -17,12 +16,10 @@ def get_user_info():
     if not user_name:
         return jsonify({"message": "登录失效，请重新登录"}), 403
 
-    # 2. 查询数据库
     conn = get_db_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     try:
-        # ✅ 修正：删除了 'id'，因为你的表中只有 user_name 作为标识
         sql = """
             SELECT user_name, nickname, avatar_url, phone, intro, create_time 
             FROM users 
@@ -34,7 +31,6 @@ def get_user_info():
         if not user:
             return jsonify({"message": "用户不存在"}), 404
         
-        # 3. 处理时间格式
         if user.get('create_time'):
             user['create_time'] = str(user['create_time'])
 
@@ -48,7 +44,7 @@ def get_user_info():
         conn.close()
 
 
-# ====== 更新用户信息 ======
+# 更新用户信息
 @user_bp.route("/update_user", methods=["POST"])
 def update_user_info():
     token = request.headers.get("Authorization")
@@ -67,7 +63,6 @@ def update_user_info():
     cursor = conn.cursor()
 
     try:
-        # ✅ 这里的字段名与你的数据库截图一致，无需修改
         sql = """
             UPDATE users 
             SET nickname = %s, avatar_url = %s, phone = %s, intro = %s 
@@ -87,7 +82,7 @@ def update_user_info():
         cursor.close()
         conn.close()
 
-# ====== 获取指定用户信息 (Public) ======
+# 获取指定用户信息
 # API: GET /api/user/<id>
 @user_bp.route("/user/<target_id>", methods=["GET"])
 def get_target_user_info(target_id):
@@ -95,8 +90,6 @@ def get_target_user_info(target_id):
     cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     try:
-        # 注意：这里我们用 target_id 去匹配数据库里的 user_name
-        # 因为你的数据库设计中，user_name 就是唯一标识符
         sql = """
             SELECT user_name, nickname, avatar_url, phone, intro, create_time 
             FROM users 
@@ -108,14 +101,12 @@ def get_target_user_info(target_id):
         if not user:
             return jsonify({"message": "用户不存在"}), 404
         
-        # 格式化返回数据 (对应 API 文档)
         response_data = {
             "user_name": user["user_name"],
             "nickname": user["nickname"],
             "avatar_url": user["avatar_url"],
             "phone": user["phone"],
             "intro": user["intro"],
-            # 数据库叫 create_time，API文档要求返回 created_at
             "created_at": str(user["create_time"]) if user["create_time"] else None,
             "message": "获取成功"
         }

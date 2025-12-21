@@ -18,7 +18,6 @@ def login():
     cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     try:
-        # ✅ 修正：只查询存在的字段 (user_name, password_md5)
         cursor.execute("SELECT user_name, password_md5 FROM users WHERE user_name = %s", (user_name,))
         user = cursor.fetchone()
 
@@ -52,15 +51,12 @@ def register():
     cursor = conn.cursor()
 
     try:
-        # ✅ 检查用户是否存在
         cursor.execute("SELECT user_name FROM users WHERE user_name = %s", (user_name,))
         if cursor.fetchone():
             return jsonify({"message": "用户名已存在"}), 409
 
         hashed_password = md5(password)
         
-        # ✅ 插入语句：对应 users 表结构
-        # 注意：nickname, phone 等字段允许为空(NULL)，注册时可以先不填
         cursor.execute("""
             INSERT INTO users (user_name, password_md5, create_time)
             VALUES (%s, %s, NOW())

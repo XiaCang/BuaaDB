@@ -9,13 +9,12 @@ product_bp = Blueprint('product', __name__)
 def generate_uuid():
     return uuid.uuid4().hex
 
-# ====== 0. 新增：获取所有商品分类 ======
+# 获取所有商品分类
 @product_bp.route("/get_categories", methods=["GET"])
 def get_categories():
     conn = get_db_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
     try:
-        # 根据你提供的图片 image_b137cb.png，表名是 categories
         sql = "SELECT category_id, category_name FROM categories"
         cursor.execute(sql)
         categories = cursor.fetchall()
@@ -27,7 +26,7 @@ def get_categories():
         cursor.close()
         conn.close()
 
-# ====== 1. 获取所有商品列表 (已添加 category_id) ======
+# 1.获取商品列表
 @product_bp.route("/get_products", methods=["GET"])
 def get_products():
     conn = get_db_connection()
@@ -51,7 +50,7 @@ def get_products():
                 "price": float(p["price"]),
                 "image_url": p["img_url"],
                 "description": p["description"],
-                "category_id": p.get("category_id"), # 👈 新增
+                "category_id": p.get("category_id"), 
                 "seller_id": p["owner_id"],
                 "seller_name": p["seller_name"],
                 "seller_avatar": p["seller_avatar"],
@@ -68,7 +67,7 @@ def get_products():
         cursor.close()
         conn.close()
 
-# ====== 2. 获取单个商品详情 (已添加 category_id) ======
+# 2. 获取商品详情
 @product_bp.route("/product/<product_id>", methods=["GET"])
 def get_product_detail(product_id):
     conn = get_db_connection()
@@ -93,9 +92,9 @@ def get_product_detail(product_id):
             "price": float(p["price"]),
             "image_url": p["img_url"],
             "description": p["description"],
-            "category_id": p.get("category_id"), # 👈 新增
+            "category_id": p.get("category_id"), 
             "seller_id": p["owner_id"],
-            "seller_name": p["seller_name"],   # 详情页最好也加上卖家信息
+            "seller_name": p["seller_name"], 
             "seller_avatar": p["seller_avatar"],
             "created_at": str(p["create_time"]),
             "status": p["status"]
@@ -110,7 +109,7 @@ def get_product_detail(product_id):
         cursor.close()
         conn.close()
 
-# ====== 3. 发布商品 (已添加 category_id) ======
+# 3. 发布商品
 @product_bp.route("/create_product", methods=["POST"])
 def create_product():
     token = request.headers.get("Authorization")
@@ -123,9 +122,8 @@ def create_product():
     price = data.get("price")
     img_url = data.get("image_url")
     desc = data.get("description")
-    category_id = data.get("category_id") # 👈 获取分类ID
+    category_id = data.get("category_id") 
     
-    # 简单的参数校验
     if not title or not price:
         return jsonify({"message": "标题和价格必填"}), 400
 
@@ -135,7 +133,6 @@ def create_product():
     cursor = conn.cursor()
     
     try:
-        # 插入语句增加 category_id
         sql = """
             INSERT INTO products 
             (product_id, product_title, price, img_url, description, category_id, owner_id, status, create_time, update_time)
@@ -154,7 +151,7 @@ def create_product():
         cursor.close()
         conn.close()
 
-# ====== 4. 修改商品 (已添加 category_id) ======
+# 4. 修改商品
 @product_bp.route("/modify_product", methods=["POST"])
 def modify_product():
     token = request.headers.get("Authorization")
@@ -168,7 +165,7 @@ def modify_product():
     price = data.get("price")
     img_url = data.get("image_url")
     desc = data.get("description")
-    category_id = data.get("category_id") # 👈 获取分类ID
+    category_id = data.get("category_id") 
 
     if not product_id:
         return jsonify({"message": "缺少商品ID"}), 400
@@ -177,7 +174,6 @@ def modify_product():
     cursor = conn.cursor()
 
     try:
-        # SQL 增加 category_id 的更新
         sql = """
             UPDATE products 
             SET product_title = %s, 
@@ -204,7 +200,7 @@ def modify_product():
         cursor.close()
         conn.close()
 
-# ====== 5. 删除商品 (保持不变) ======
+# 5. 删除商品
 @product_bp.route("/delete_product/<product_id>", methods=["DELETE"])
 def delete_product(product_id):
     token = request.headers.get("Authorization")
@@ -237,7 +233,7 @@ def delete_product(product_id):
         cursor.close()
         conn.close()
 
-# ====== 6. 搜索商品 (已添加 category_id) ======
+# 6. 搜索商品
 @product_bp.route("/search_products", methods=["GET"])
 def search_products():
     keyword = request.args.get("keyword", "").strip()
@@ -269,7 +265,7 @@ def search_products():
                 "price": float(p["price"]),
                 "image_url": p["img_url"],
                 "description": p["description"],
-                "category_id": p.get("category_id"), # 👈 新增
+                "category_id": p.get("category_id"), 
                 "seller_id": p["owner_id"],
                 "seller_name": p["seller_name"],
                 "seller_avatar": p["seller_avatar"],
