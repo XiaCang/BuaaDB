@@ -3,18 +3,7 @@
     <el-header class="page-header">
 
       <h2>消息中心</h2>
-      <div class="header-actions">
-        <el-input
-          v-model="searchUser"
-          placeholder="搜索用户..."
-          class="search-input"
-          :prefix-icon="Search"
-          style="width: 200px"
-        />
-        <el-button type="primary" class="btn-orange" :icon="Plus">
-          新建聊天
-        </el-button>
-      </div>
+      
     </el-header>
     
     <el-container class="main-container">
