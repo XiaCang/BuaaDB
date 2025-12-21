@@ -13,7 +13,7 @@ def generate_uuid():
 # ====== 1. 购买商品 (核心事务功能) ======
 @order_bp.route("/buy_product/<product_id>", methods=["POST"])
 def buy_product(product_id):
-    # 1. 身份验证
+    # 补全 Token 验证代码
     token = request.headers.get("Authorization")
     user_name = verify_token(token)
     if not user_name:
@@ -23,9 +23,7 @@ def buy_product(product_id):
     cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     try:
-        # 2. 检查商品是否存在，以及是否还在架上 (active)
-        # 注意：这里最好加上 FOR UPDATE (悲观锁) 防止高并发下超卖，
-        # 但考虑到是课程作业，普通查询也可以，只要利用 UPDATE 的返回值判断即可。
+        # 1. 检查商品状态
         cursor.execute("SELECT * FROM products WHERE product_id = %s", (product_id,))
         product = cursor.fetchone()
 
@@ -33,26 +31,13 @@ def buy_product(product_id):
             return jsonify({"message": "商品不存在"}), 404
         
         if product['status'] != 'active':
-            return jsonify({"message": "手慢了，商品已售出或下架"}), 409 # 409 Conflict
+            return jsonify({"message": "手慢了，商品已售出"}), 409
 
-        # 防止自己买自己的商品
+        # 防止买自己的商品
         if product['owner_id'] == user_name:
              return jsonify({"message": "不能购买自己发布的商品"}), 400
 
-        # ====== 3. 开启事务 (Transaction) ======
-        # (PyMySQL 默认开启事务，只要不 commit 就不会生效)
-        
-        # A. 更新商品状态为 'sold'
-        # 这里的 WHERE status='active' 是关键，这是乐观锁的一种实现
-        update_sql = "UPDATE products SET status = 'sold' WHERE product_id = %s AND status = 'active'"
-        rows_affected = cursor.execute(update_sql, (product_id,))
-        
-        if rows_affected == 0:
-            # 如果更新行数为0，说明刚才那一瞬间被别人买走了
-            conn.rollback()
-            return jsonify({"message": "购买失败，商品已被他人抢先购买"}), 409
-
-        # B. 生成订单记录
+        # 2. 插入订单
         order_id = generate_uuid()
         seller_id = product['owner_id']
         
@@ -63,14 +48,14 @@ def buy_product(product_id):
         """
         cursor.execute(insert_sql, (order_id, user_name, seller_id, product_id))
 
-        # C. 提交事务 (原子性：要么全成功，要么全失败)
+        # 提交事务 (触发器会自动更新 products 表状态)
         conn.commit()
-        print(f"[ORDER] 用户 {user_name} 购买了商品 {product_id}, 订单号 {order_id}")
         
+        print(f"[ORDER] 订单 {order_id} 创建成功，触发器已自动更新商品状态")
         return jsonify({"message": "购买成功", "order_id": order_id}), 200
 
     except Exception as e:
-        conn.rollback() # 发生任何报错，回滚所有操作，保证数据安全
+        conn.rollback()
         print(f"[ERROR] 购买失败: {e}")
         return jsonify({"message": "服务器内部错误"}), 500
     finally:
@@ -89,9 +74,10 @@ def get_orders():
     cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     try:
-        # 查询我是买家的订单，顺便关联查出商品的信息(标题、图片)，前端展示更好看
+        # ✅ 修改点：在 SELECT 中增加了 o.product_id
         sql = """
             SELECT o.order_id, o.order_status, o.created_time,
+                   o.product_id, 
                    p.product_title, p.img_url, p.price,
                    o.seller_id
             FROM orders o

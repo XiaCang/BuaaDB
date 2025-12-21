@@ -235,7 +235,10 @@ def delete_favorite_folder(folder_id):
         if not cursor.fetchone():
             return jsonify({"message": "收藏夹不存在或无权限"}), 404
 
-        cursor.execute("DELETE FROM favorite_item WHERE favorite_id = %s", (folder_id,))
+        # 2. 级联删除：先删除该收藏夹里的所有商品项
+        # cursor.execute("DELETE FROM favorite_item WHERE favorite_id = %s", (folder_id,))
+        
+        # 3. 再删除收藏夹本身
         cursor.execute("DELETE FROM favorites WHERE favorite_id = %s", (folder_id,))
         conn.commit()
         return jsonify({"message": "收藏夹已删除"}), 200
