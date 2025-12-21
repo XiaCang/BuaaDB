@@ -280,19 +280,83 @@
   "message": msg  // msg为服务器返回的信息
 }
 
-/api/favorite_product/<id>
+/api/favorite_folders
 
-描述：收藏商品id为<id>的商品
+描述：获取自己所有收藏夹
+
+类型：GET
+
+返回值
+{
+  "folders": [
+    {
+      "id": id, // 收藏夹id
+      "name": name, // 收藏夹名称
+      "is_default": is_default // 是否为默认收藏夹
+      "created_at": created_at // 收藏夹创建时间
+    }
+  ]
+}
+
+/api/create_favorite_folder
+
+描述：创建收藏夹
 类型：POST
+
+参数
+{
+  "name": name, // 收藏夹名称
+}
 
 返回值
 {
   "message": msg  // msg为服务器返回的信息
 }
 
-/api/get_favorites
+/api/modify_favorite_folder
 
-描述：获取自己所有收藏
+描述：修改收藏夹名称
+类型：POST
+
+参数
+{
+  "name": name, // 收藏夹名称
+}
+
+返回值
+{
+  "message": msg  // msg为服务器返回的信息
+}
+
+/api/delete_favorite_folder/<id>
+
+描述：删除收藏夹id为<id>的收藏夹
+类型：DELETE
+
+返回值
+{
+  "message": msg  // msg为服务器返回的信息
+}
+
+/api/favorite_product
+
+描述：收藏商品id为<id>的商品到收藏夹
+类型：POST
+
+参数
+{
+  "product_id": product_id, // 商品id
+  "folder_id": folder_id, // 收藏夹id
+}
+
+返回值
+{
+  "message": msg  // msg为服务器返回的信息
+}
+
+/api/get_favorites/<id>
+
+描述：获取自己的收藏夹id为<id>的收藏
 类型：GET
 
 返回值
@@ -305,9 +369,9 @@
   ]
 }
 
-/api/delete_favorite/<id>
+/api/delete_favorite/<folder_id>/product/<product_id>
 
-描述：删除收藏id为<id>的收藏
+描述：从收藏夹id为<folder_id>中删除商品id为<product_id>的收藏
 类型：DELETE
 
 返回值
