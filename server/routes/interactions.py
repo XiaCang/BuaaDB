@@ -123,8 +123,11 @@ def delete_comment(comment_id):
 # B. 收藏系统 (Favorites)
 # 逻辑：先检查该用户有没有“收藏夹”，没有则创建，然后往夹子里加东西
 # ==========================================
+# ==========================================
+# B. 收藏系统 (Favorites)
+# ==========================================
+
 # ====== 1. 获取所有收藏夹 ======
-# API: GET /api/favorite_folders
 @interaction_bp.route("/favorite_folders", methods=["GET"])
 def get_favorite_folders():
     token = request.headers.get("Authorization")
@@ -135,12 +138,11 @@ def get_favorite_folders():
     conn = get_db_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
     try:
-        # 查询该用户所有的收藏夹
+        # ✅ 修正：使用 created_time (你的截图显示带d)
         sql = "SELECT favorite_id as id, name, created_time as created_at FROM favorites WHERE user_id = %s ORDER BY created_time DESC"
         cursor.execute(sql, (user_name,))
         folders = cursor.fetchall()
         
-        # 转换时间格式
         for f in folders:
             f['created_at'] = str(f['created_at'])
 
@@ -153,7 +155,6 @@ def get_favorite_folders():
         conn.close()
 
 # ====== 2. 创建收藏夹 ======
-# API: POST /api/create_favorite_folder
 @interaction_bp.route("/create_favorite_folder", methods=["POST"])
 def create_favorite_folder():
     token = request.headers.get("Authorization")
@@ -171,7 +172,7 @@ def create_favorite_folder():
     cursor = conn.cursor()
     try:
         folder_id = generate_uuid()
-        # 插入新收藏夹
+        # ✅ 修正：使用 created_time
         sql = "INSERT INTO favorites (favorite_id, user_id, name, created_time) VALUES (%s, %s, %s, NOW())"
         cursor.execute(sql, (folder_id, user_name, folder_name))
         conn.commit()
@@ -186,7 +187,6 @@ def create_favorite_folder():
         conn.close()
 
 # ====== 3. 修改收藏夹名称 ======
-# API: POST /api/modify_favorite_folder
 @interaction_bp.route("/modify_favorite_folder", methods=["POST"])
 def modify_favorite_folder():
     token = request.headers.get("Authorization")
@@ -195,7 +195,7 @@ def modify_favorite_folder():
         return jsonify({"message": "未登录"}), 403
 
     data = request.json
-    folder_id = data.get("id") # 注意：修改必须传 id
+    folder_id = data.get("id")
     new_name = data.get("name")
 
     if not folder_id or not new_name:
@@ -204,7 +204,6 @@ def modify_favorite_folder():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # 确保只能修改自己的收藏夹
         sql = "UPDATE favorites SET name = %s WHERE favorite_id = %s AND user_id = %s"
         affected = cursor.execute(sql, (new_name, folder_id, user_name))
         conn.commit()
@@ -222,7 +221,6 @@ def modify_favorite_folder():
         conn.close()
 
 # ====== 4. 删除收藏夹 ======
-# API: DELETE /api/delete_favorite_folder/<id>
 @interaction_bp.route("/delete_favorite_folder/<folder_id>", methods=["DELETE"])
 def delete_favorite_folder(folder_id):
     token = request.headers.get("Authorization")
@@ -233,17 +231,12 @@ def delete_favorite_folder(folder_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # 1. 验证归属权
         cursor.execute("SELECT * FROM favorites WHERE favorite_id = %s AND user_id = %s", (folder_id, user_name))
         if not cursor.fetchone():
             return jsonify({"message": "收藏夹不存在或无权限"}), 404
 
-        # 2. 级联删除：先删除该收藏夹里的所有商品项
         cursor.execute("DELETE FROM favorite_item WHERE favorite_id = %s", (folder_id,))
-        
-        # 3. 再删除收藏夹本身
         cursor.execute("DELETE FROM favorites WHERE favorite_id = %s", (folder_id,))
-        
         conn.commit()
         return jsonify({"message": "收藏夹已删除"}), 200
     except Exception as e:
@@ -255,7 +248,6 @@ def delete_favorite_folder(folder_id):
         conn.close()
 
 # ====== 5. 收藏商品到指定收藏夹 ======
-# API: POST /api/favorite_product
 @interaction_bp.route("/favorite_product", methods=["POST"])
 def add_favorite_product():
     token = request.headers.get("Authorization")
@@ -281,12 +273,13 @@ def add_favorite_product():
         # 2. 检查是否已经收藏过（避免重复）
         cursor.execute("SELECT * FROM favorite_item WHERE favorite_id = %s AND product_id = %s", (folder_id, product_id))
         if cursor.fetchone():
-            return jsonify({"message": "该商品已在此收藏夹中"}), 200 # 幂等处理
+            return jsonify({"message": "该商品已在此收藏夹中"}), 200 
 
         # 3. 插入收藏项
-        item_id = generate_uuid()
-        sql = "INSERT INTO favorite_item (item_id, favorite_id, product_id, created_time) VALUES (%s, %s, %s, NOW())"
-        cursor.execute(sql, (item_id, folder_id, product_id))
+        # ✅ 修正：删除了 item_id，因为你的表中没有这个字段
+        # ✅ 修正：使用 created_time 对应你的截图
+        sql = "INSERT INTO favorite_item (favorite_id, product_id, created_time) VALUES (%s, %s, NOW())"
+        cursor.execute(sql, (folder_id, product_id))
         conn.commit()
 
         return jsonify({"message": "收藏成功"}), 201
@@ -299,7 +292,6 @@ def add_favorite_product():
         conn.close()
 
 # ====== 6. 获取指定收藏夹内的商品 ======
-# API: GET /api/get_favorites/<id>
 @interaction_bp.route("/get_favorites/<folder_id>", methods=["GET"])
 def get_folder_items(folder_id):
     token = request.headers.get("Authorization")
@@ -310,14 +302,11 @@ def get_folder_items(folder_id):
     conn = get_db_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
     try:
-        # 1. 验证收藏夹权限
         cursor.execute("SELECT * FROM favorites WHERE favorite_id = %s AND user_id = %s", (folder_id, user_name))
         if not cursor.fetchone():
             return jsonify({"message": "收藏夹不存在或无权限"}), 404
 
-        # 2. 查询商品详情 (关联 Products 表)
-        # 虽然你的文档只要求返回 product_id，但通常前端展示需要 title, price, img_url
-        # 这里我把详细信息也查出来给你，前端用不用取决于你
+        # ✅ 修正：fi.created_time
         sql = """
             SELECT fi.product_id, p.product_title as name, p.price, p.img_url, fi.created_time
             FROM favorite_item fi
@@ -328,7 +317,6 @@ def get_folder_items(folder_id):
         cursor.execute(sql, (folder_id,))
         favorites = cursor.fetchall()
         
-        # 格式化时间
         for f in favorites:
             f['created_time'] = str(f['created_time'])
 
@@ -341,7 +329,6 @@ def get_folder_items(folder_id):
         conn.close()
 
 # ====== 7. 从指定收藏夹删除商品 ======
-# API: DELETE /api/delete_favorite/<folder_id>/product/<product_id>
 @interaction_bp.route("/delete_favorite/<folder_id>/product/<product_id>", methods=["DELETE"])
 def delete_favorite_item(folder_id, product_id):
     token = request.headers.get("Authorization")
@@ -352,12 +339,10 @@ def delete_favorite_item(folder_id, product_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # 1. 验证收藏夹归属 (防止删除别人的收藏)
         cursor.execute("SELECT * FROM favorites WHERE favorite_id = %s AND user_id = %s", (folder_id, user_name))
         if not cursor.fetchone():
             return jsonify({"message": "操作失败：无权操作此收藏夹"}), 403
 
-        # 2. 删除收藏项
         sql = "DELETE FROM favorite_item WHERE favorite_id = %s AND product_id = %s"
         affected = cursor.execute(sql, (folder_id, product_id))
         conn.commit()
