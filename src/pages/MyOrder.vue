@@ -11,8 +11,6 @@
     <el-card class="order-list-card" shadow="never">
       <el-tabs v-model="statusFilter" class="order-tabs">
         <el-tab-pane label="全部订单" name="all" />
-        <el-tab-pane label="进行中" name="active" />
-        <el-tab-pane label="已完成" name="completed" />
       </el-tabs>
 
       <div v-loading="loading" class="list-wrapper">
@@ -107,12 +105,12 @@ const filteredOrders = computed(() => {
 // 状态展示逻辑
 const getStatusText = (status) => {
   const map = { active: '进行中', completed: '已完成', cancelled: '已取消' }
-  return map[status] || status
+  return map[status] || '已完成'
 }
 
 const getStatusTag = (status) => {
   const map = { active: 'warning', completed: 'success', cancelled: 'info' }
-  return map[status] || ''
+  return map[status] || 'success'
 }
 
 const formatDate = (str) => str ? new Date(str).toLocaleString() : ''

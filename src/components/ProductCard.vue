@@ -1,37 +1,51 @@
 <template>
-  <el-card class="p-card" :body-style="{ padding: '0px' }" shadow="hover">
-    <div class="img-box">
-      <el-image :src="item.image_url" fit="cover" />
-      <div v-if="item.status === 'sold'" class="overlay">已售出</div>
-    </div>
-    
-    <div class="content">
-      <div class="price-tag" :class="{ 'is-sold': item.status === 'sold' }">¥{{ item.price }}</div>
-      <h4 class="title">{{ item.name }}</h4>
-      
-      <div class="footer">
-        <template v-if="!isMine">
-          <span class="seller">ID: {{ item.seller_id }}</span>
-          <el-button size="small" class="btn-favor" @click.stop="handleFavor(item)">收藏</el-button>
-          <el-button size="small" class="btn-buy" @click.stop="handleBuy" :disabled="item.status !== 'active'">{{ item.status === 'active' ? '购买' : '已售出' }}</el-button>
-        </template>
-        
-        <template v-else>
-          <el-button size="small" class="btn-edit" plain type="primary" @click.stop="handleEdit" :disabled="item.status !== 'active'">编辑</el-button>
-          <el-button size="small" class="btn-delete" plain type="danger" @click.stop="handleDelete">删除</el-button>
-        </template>
+  <div>
+    <el-card class="p-card" :body-style="{ padding: '0px' }" shadow="hover">
+      <div class="img-box">
+        <el-image :src="item.image_url" fit="cover" />
+        <div v-if="item.status === 'sold'" class="overlay">已售出</div>
       </div>
-    </div>
-  </el-card>
+      
+      <div class="content">
+        <div class="price-tag" :class="{ 'is-sold': item.status === 'sold' }">¥{{ item.price }}</div>
+        <h4 class="title">{{ item.name }}</h4>
+        
+        <div class="footer">
+          <template v-if="!isMine">
+            <span class="seller">ID: {{ item.seller_id }}</span>
+            <el-button size="small" class="btn-favor" @click.stop="handleFavor(item)">收藏</el-button>
+            <el-button size="small" class="btn-buy" @click.stop="handleBuy" :disabled="item.status !== 'active'">{{ item.status === 'active' ? '购买' : '已售出' }}</el-button>
+          </template>
+          
+          <template v-else>
+            <el-button size="small" class="btn-edit" plain type="primary" @click.stop="handleEdit" :disabled="item.status !== 'active'">编辑</el-button>
+            <el-button size="small" class="btn-delete" plain type="danger" @click.stop="handleDelete">删除</el-button>
+          </template>
+        </div>
+      </div>
+    </el-card>
 
-    <el-dialog
+  <el-dialog
     v-model="favorDialogVisible"
-    title="选择收藏夹"
-    width="400px"
+    width="360px"
+    class="favor-dialog"
   >
-    <el-form label-position="top">
-      <el-form-item label="已有收藏夹">
-        <el-select v-model="selectedFolderId" placeholder="请选择收藏夹" style="width: 100%">
+    <template #header>
+      <div class="favor-header">
+        <el-icon size="20"><Star /></el-icon>
+        <span>收藏商品</span>
+      </div>
+    </template>
+      <div class="favor-body">
+        <p class="favor-tip">请选择要收藏到的收藏夹</p>
+
+        <el-select
+          v-model="selectedFolderId"
+          placeholder="选择收藏夹"
+          size="large"
+          style="width: 100%"
+          @click.stop
+        >
           <el-option
             v-for="f in folders"
             :key="f.id"
@@ -39,25 +53,20 @@
             :value="f.id"
           />
         </el-select>
-      </el-form-item>
+      </div>
 
-      <el-divider>或</el-divider>
-
-      <el-form-item label="新建收藏夹">
-        <el-input
-          v-model="newFolderName"
-          placeholder="输入新收藏夹名称"
-          maxlength="20"
-          show-word-limit
-        />
-      </el-form-item>
-    </el-form>
-
-    <template #footer>
-      <el-button @click="favorDialogVisible = false">取消</el-button>
-      <el-button type="primary" @click="confirmFavor">确认收藏</el-button>
-    </template>
-  </el-dialog>
+      <template #footer>
+  <el-button @click.stop="favorDialogVisible = false">取消</el-button>
+  <el-button
+    type="primary"
+    size="large"
+    @click.stop="confirmFavor"
+  >
+    收藏
+  </el-button>
+</template>
+    </el-dialog>
+  </div>
 </template>
 
 <script setup>
@@ -67,11 +76,12 @@ import {
   buyProduct,
   deleteProduct,
   favoriteProduct,
-  getFavoriteFolders,
-  createFavoriteFolder
+  getFavoriteFolders
 } from '@/api/index'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { Star } from '@element-plus/icons-vue'
+
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -86,7 +96,6 @@ const emit = defineEmits(['refresh'])
 const favorDialogVisible = ref(false)
 const folders = ref([])
 const selectedFolderId = ref(null)
-const newFolderName = ref('')
 const currentProductId = ref(null)
 
 /* ===== 购买 ===== */
@@ -126,7 +135,6 @@ const handleFavor = async (item) => {
 
   currentProductId.value = item.id
   selectedFolderId.value = null
-  newFolderName.value = ''
 
   const res = await getFavoriteFolders()
   folders.value = res.folders || []
@@ -136,56 +144,38 @@ const handleFavor = async (item) => {
 
 /* ===== 确认收藏 ===== */
 const confirmFavor = async () => {
-  let folderId = selectedFolderId.value
-
-  // 新建收藏夹
-  if (!folderId && newFolderName.value.trim()) {
-    const res = await createFavoriteFolder({ name: newFolderName.value })
-    ElMessage.success(res.message || '收藏夹创建成功')
-
-    // 重新获取收藏夹
-    const list = await getFavoriteFolders()
-    folders.value = list.folders
-    folderId = folders.value.at(-1).id
-  }
-
-  if (!folderId) {
-    ElMessage.warning('请选择或创建一个收藏夹')
+  if (!selectedFolderId.value) {
+    ElMessage.warning('请选择一个收藏夹')
     return
   }
 
   await favoriteProduct({
     product_id: currentProductId.value,
-    folder_id: folderId
+    folder_id: selectedFolderId.value
   })
 
   ElMessage.success('收藏成功')
   favorDialogVisible.value = false
 }
+
 </script>
 
 <style scoped>
-
 .is-sold {
   color: #999 !important;
-  text-decoration: line-through; /* 删除线 */
+  text-decoration: line-through;
 }
 .p-card {
   border-radius: 12px;
   margin-bottom: 20px;
   border: none;  
-  cursor: pointer; /* 鼠标悬停变手型 */;
+  cursor: pointer;
 }
 .p-card:hover {
-  transform: translateY(-5px); /* 悬停浮起效果 */
+  transform: translateY(-5px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  border : 1px solid #ff4d4f;
+  border: 1px solid #ff4d4f;
 }
-.product-card:hover {
-  transform: translateY(-5px); /* 悬停浮起效果 */
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
 .img-box {
   height: 180px;
   position: relative;
@@ -213,8 +203,29 @@ const confirmFavor = async () => {
 }
 .btn-favor { border-color: #ff6600; color: #ff6600; border-radius: 15px; margin-left: 30%; }
 .btn-buy:hover { background-color: #ff8533; }
-
 .btn-edit { border-color: #ff6600; color: #ff6600; border-radius: 15px; }
 .btn-delete { border-color: #ff6600; color: #ff6600; border-radius: 15px; }
+.favor-dialog :deep(.el-dialog) {
+  border-radius: 14px;
+}
+
+.favor-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ff6600;
+}
+
+.favor-body {
+  padding: 10px 0 5px;
+}
+
+.favor-tip {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 10px;
+}
 
 </style>

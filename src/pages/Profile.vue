@@ -18,6 +18,8 @@
           </div>
           <h2 class="nickname-display">{{ userInfo.nickname || '未设置' }}</h2>
           <el-tag type="warning" effect="dark" round>普通用户</el-tag>
+          <!-- 注册时间 -->
+          <p class="register-time">注册时间: {{ userInfo.create_time }}</p>
         </div>
 
         <div class="main-form">
@@ -69,6 +71,8 @@ const loadData = async () => {
   try {
     const res = await getSelfInfo()
     userInfo.value = res
+    console.log("In Profile : userInfo = " , userInfo.value);
+    
     // 同步到编辑表单
     Object.assign(editForm, {
       nickname: res.nickname,
