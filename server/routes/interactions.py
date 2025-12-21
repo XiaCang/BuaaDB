@@ -136,7 +136,7 @@ def get_favorite_folders():
     cursor = conn.cursor(pymysql.cursors.DictCursor)
     try:
         # 查询该用户所有的收藏夹
-        sql = "SELECT favorite_id as id, name, create_time as created_at FROM favorites WHERE user_id = %s ORDER BY create_time DESC"
+        sql = "SELECT favorite_id as id, name, created_time as created_at FROM favorites WHERE user_id = %s ORDER BY created_time DESC"
         cursor.execute(sql, (user_name,))
         folders = cursor.fetchall()
         
@@ -172,7 +172,7 @@ def create_favorite_folder():
     try:
         folder_id = generate_uuid()
         # 插入新收藏夹
-        sql = "INSERT INTO favorites (favorite_id, user_id, name, create_time) VALUES (%s, %s, %s, NOW())"
+        sql = "INSERT INTO favorites (favorite_id, user_id, name, created_time) VALUES (%s, %s, %s, NOW())"
         cursor.execute(sql, (folder_id, user_name, folder_name))
         conn.commit()
         
@@ -285,7 +285,7 @@ def add_favorite_product():
 
         # 3. 插入收藏项
         item_id = generate_uuid()
-        sql = "INSERT INTO favorite_item (item_id, favorite_id, product_id, create_time) VALUES (%s, %s, %s, NOW())"
+        sql = "INSERT INTO favorite_item (item_id, favorite_id, product_id, created_time) VALUES (%s, %s, %s, NOW())"
         cursor.execute(sql, (item_id, folder_id, product_id))
         conn.commit()
 
@@ -319,18 +319,18 @@ def get_folder_items(folder_id):
         # 虽然你的文档只要求返回 product_id，但通常前端展示需要 title, price, img_url
         # 这里我把详细信息也查出来给你，前端用不用取决于你
         sql = """
-            SELECT fi.product_id, p.product_title as name, p.price, p.img_url, fi.create_time
+            SELECT fi.product_id, p.product_title as name, p.price, p.img_url, fi.created_time
             FROM favorite_item fi
             JOIN products p ON fi.product_id = p.product_id
             WHERE fi.favorite_id = %s
-            ORDER BY fi.create_time DESC
+            ORDER BY fi.created_time DESC
         """
         cursor.execute(sql, (folder_id,))
         favorites = cursor.fetchall()
         
         # 格式化时间
         for f in favorites:
-            f['create_time'] = str(f['create_time'])
+            f['created_time'] = str(f['created_time'])
 
         return jsonify({"favorites": favorites}), 200
     except Exception as e:
