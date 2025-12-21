@@ -23,23 +23,23 @@ export const getCategories = () => request.get('/get_categories')
 // 订单与收藏
 export const getOrders = () => request.get('/get_orders')
 export const getFavoriteFolders = () =>
-  request.get('/api/favorite_folders')
+  request.get('/favorite_folders')
 
 // 创建收藏夹
 export const createFavoriteFolder = (data) =>
-  request.post('/api/create_favorite_folder', data)
+  request.post('/create_favorite_folder', data)
 
 // 修改收藏夹名称
 export const modifyFavoriteFolder = (data) =>
-  request.post('/api/modify_favorite_folder', data)
+  request.post('/modify_favorite_folder', data)
 
 // 删除收藏夹
 export const deleteFavoriteFolder = (id) =>
-  request.delete(`/api/delete_favorite_folder/${id}`)
+  request.delete(`/delete_favorite_folder/${id}`)
 
 // 收藏商品到收藏夹
 export const favoriteProduct = (data) =>
-  request.post('/api/favorite_product', data)
+  request.post('/favorite_product', data)
 /*
 data = {
   product_id,
@@ -49,10 +49,10 @@ data = {
 
 // 获取某个收藏夹下的收藏
 export const getFavorites = (folderId) =>
-  request.get(`/api/get_favorites/${folderId}`)
+  request.get(`/get_favorites/${folderId}`)
 
 export const deleteFavorite = (folderId, productId) =>
-  request.delete(`/api/delete_favorite/${folderId}/product/${productId}`)
+  request.delete(`/delete_favorite/${folderId}/product/${productId}`)
 
 // 评论与消息
 export const publishComment = (data) => request.post('/publish_comment', data)

@@ -23,23 +23,74 @@
       </div>
     </div>
   </el-card>
+
+    <el-dialog
+    v-model="favorDialogVisible"
+    title="选择收藏夹"
+    width="400px"
+  >
+    <el-form label-position="top">
+      <el-form-item label="已有收藏夹">
+        <el-select v-model="selectedFolderId" placeholder="请选择收藏夹" style="width: 100%">
+          <el-option
+            v-for="f in folders"
+            :key="f.id"
+            :label="f.name"
+            :value="f.id"
+          />
+        </el-select>
+      </el-form-item>
+
+      <el-divider>或</el-divider>
+
+      <el-form-item label="新建收藏夹">
+        <el-input
+          v-model="newFolderName"
+          placeholder="输入新收藏夹名称"
+          maxlength="20"
+          show-word-limit
+        />
+      </el-form-item>
+    </el-form>
+
+    <template #footer>
+      <el-button @click="favorDialogVisible = false">取消</el-button>
+      <el-button type="primary" @click="confirmFavor">确认收藏</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { buyProduct, deleteProduct, favoriteProduct } from '@/api/index'
+import {
+  buyProduct,
+  deleteProduct,
+  favoriteProduct,
+  getFavoriteFolders,
+  createFavoriteFolder
+} from '@/api/index'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+
 const userStore = useUserStore()
 const router = useRouter()
+
 const props = defineProps({
   item: Object,
-  isMine: Boolean // 是否为“我的商品”模式
+  isMine: Boolean
 })
 const emit = defineEmits(['refresh'])
 
+/* ===== 收藏相关状态 ===== */
+const favorDialogVisible = ref(false)
+const folders = ref([])
+const selectedFolderId = ref(null)
+const newFolderName = ref('')
+const currentProductId = ref(null)
+
+/* ===== 购买 ===== */
 const handleBuy = async () => {
-  // 确认
   ElMessageBox.confirm(
     `确认以 ¥${props.item.price} 的价格购买此商品吗？`,
     '购买确认',
@@ -51,26 +102,65 @@ const handleBuy = async () => {
   })
 }
 
+/* ===== 删除 ===== */
 const handleDelete = () => {
-  ElMessageBox.confirm('确定要删除这件商品吗？', '警告', { type: 'error' }).then(async () => {
-    await deleteProduct(props.item.id)
-    ElMessage.success('已删除')
-    emit('refresh')
-  })
+  ElMessageBox.confirm('确定要删除这件商品吗？', '警告', { type: 'error' })
+    .then(async () => {
+      await deleteProduct(props.item.id)
+      ElMessage.success('已删除')
+      emit('refresh')
+    })
 }
 
+/* ===== 编辑 ===== */
 const handleEdit = () => {
   router.push(`/modify_product/${props.item.id}`)
 }
 
+/* ===== 点击收藏 ===== */
 const handleFavor = async (item) => {
-  if (!userStore.token) return router.push('/login')
-  try {
-    const res = await favoriteProduct(item.id)
-    ElMessage.success(res.message || '已加入收藏夹')
-  } catch (e) {
-    
+  if (!userStore.token) {
+    router.push('/login')
+    return
   }
+
+  currentProductId.value = item.id
+  selectedFolderId.value = null
+  newFolderName.value = ''
+
+  const res = await getFavoriteFolders()
+  folders.value = res.folders || []
+
+  favorDialogVisible.value = true
+}
+
+/* ===== 确认收藏 ===== */
+const confirmFavor = async () => {
+  let folderId = selectedFolderId.value
+
+  // 新建收藏夹
+  if (!folderId && newFolderName.value.trim()) {
+    const res = await createFavoriteFolder({ name: newFolderName.value })
+    ElMessage.success(res.message || '收藏夹创建成功')
+
+    // 重新获取收藏夹
+    const list = await getFavoriteFolders()
+    folders.value = list.folders
+    folderId = folders.value.at(-1).id
+  }
+
+  if (!folderId) {
+    ElMessage.warning('请选择或创建一个收藏夹')
+    return
+  }
+
+  await favoriteProduct({
+    product_id: currentProductId.value,
+    folder_id: folderId
+  })
+
+  ElMessage.success('收藏成功')
+  favorDialogVisible.value = false
 }
 </script>
 
